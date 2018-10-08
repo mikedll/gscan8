@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"fmt"
 	"log"
-	"html/template"
+	"github.com/qor/render"
 )
 
 
@@ -20,10 +20,14 @@ type TempParams struct {
 func main() {
 	fmt.Println("Starting server...")
 
-	var templ, _ = template.ParseFiles("index.html")
+	Render := render.New(&render.Config{
+		ViewPaths:  []string{},
+		DefaultLayout: "",
+		FuncMapMaker: nil,
+	})	
+	
 	var root = func(w http.ResponseWriter, req *http.Request) {
-		m := TempParams{Name: "Carol"}
-		templ.Execute(w, m)
+		Render.Execute("index", nil, req, w)
 	}
 
 	http.Handle("/", http.HandlerFunc(root))
