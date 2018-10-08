@@ -7,23 +7,23 @@ import (
 	"fmt"
 	"log"
 	"html/template"
-	"github.com/mikedll/stringutil"
 )
+
+
 
 var addr = flag.String("addr", ":8081", "http service address")
 
-var templ = template.Must(template.New("someserver").Parse("Hey mike. We got some fanciness in here: 語語語 {{.}}."))
+type TempParams struct {
+	Name string
+}
 
 func main() {
-	fmt.Println(stringutil.Reverse("!oG olleH"))
-	fmt.Println("Unhex:", unhex('a'))
-	fmt.Println("Unhex:", unhex('F'))
-	fmt.Println("Unhex:", unhex('c'))
-	fmt.Println("Unhex:", unhex('C'))
-	fmt.Println("Unhex:", unhex('8'))
+	fmt.Println("Starting server...")
 
-	for _, char := range "日本\x80語ab" {
-		fmt.Printf("here is a char, %#U, starting.\n", char)
+	var templ, _ = template.ParseFiles("index.html")
+	var root = func(w http.ResponseWriter, req *http.Request) {
+		m := TempParams{Name: "Carol"}
+		templ.Execute(w, m)
 	}
 
 	http.Handle("/", http.HandlerFunc(root))
@@ -31,21 +31,4 @@ func main() {
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
-}
-
-func root(w http.ResponseWriter, req *http.Request) {
-	templ.Execute(w, "Carol")
-}
-
-func unhex(b byte) byte {
-	switch {
-	case '0' <= b && b <= '9':
-		return b - '0'
-	case 'a' <= b && b <= 'f':
-		return b - 'a' + 10
-	case 'A' <= b && b <= 'F':
-		return b - 'A' + 10
-	}
-
-	return 0;
 }
