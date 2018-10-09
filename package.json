@@ -1,0 +1,24 @@
+{
+  "name": "gscan8",
+  "version": "1.0.0",
+  "description": "App for browsing Github gists.",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikedll/gscan8.git"
+  },
+  "keywords": [
+    "go"
+  ],
+  "author": "Michael Rivera",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mikedll/gscan8/issues"
+  },
+  "homepage": "https://github.com/mikedll/gscan8#readme"
+}

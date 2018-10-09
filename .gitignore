@@ -13,3 +13,4 @@
 
 tmp/*
 storage/*
+node_modules/*
