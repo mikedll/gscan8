@@ -10,8 +10,6 @@ import (
 	"html/template"
 )
 
-
-
 var addr = flag.String("addr", ":8081", "http service address")
 
 type TempParams struct {
@@ -21,6 +19,8 @@ type TempParams struct {
 var sBootstrap template.HTML
 
 func main() {
+	main2()
+	
 	sBootstrap = template.HTML(`[
         {title: "A neat gist", href: "https://gist.github.com/mikedll/8eaa6df25ac7a10ae3ded33e7f00b306"},
         {title: "Cute Gist", href: "https://gist.github.com/mikedll/db0bbe17ddfa389eada54682f4a5b4c5"}
