@@ -1,0 +1,85 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"/>
+
+    <title>GScan8</title>
+
+    <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    
+    <!-- Don't use this in production: -->
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+
+    <!-- <script type="text/babel" src="main.jsx" ></script> -->    
+    <style>
+     .main-cont {
+       padding-top: 1em;
+     }
+     body {
+       background: #000;
+       color: #fff;
+     }
+     .footer { 
+       margin-top: 1rem;
+       border-top: 1px solid #ddd;
+       text-align: right; 
+     }
+    </style>
+  </head>
+  <body>
+
+    <div class="container main-cont">
+      <div class="row">
+        <div class="col">
+          <h3>GScan8 - Welcome</h3>
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="col">
+          <div id="app-root"></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col footer">
+         Copyright (c) 2018 <a href="https://mikedll.netlify.com/" target="_blank">Michael Rivera</a>
+        </div>
+      </div>
+
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+    <script type="text/babel" >
+      const __bootstrap =  {{ .Bootstrap }}
+      
+      class App extends React.Component {
+        constructor(props) {
+          super(props)
+        }
+      
+        render() {
+          const gists = this.props.gists.map(function(g) { return (
+            <tr key={g.id}>
+              <th>{g.title}</th><th><a href={g.url}>{g.url}</a></th>
+            </tr>
+            )})
+            
+             return (
+               <div className="gist"><table className="table table-bordered"><thead><tr><td>Name of Gist</td><td>Link</td></tr></thead><tbody>{gists}</tbody></table></div>
+             )
+         }
+     }
+
+                 $(() => {
+                   ReactDOM.render(<App gists={__bootstrap}/>, document.getElementById('app-root'))
+                 })
+    </script>
+    
+  </body>
+</html>
