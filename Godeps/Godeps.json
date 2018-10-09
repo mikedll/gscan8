@@ -1,0 +1,69 @@
+{
+	"ImportPath": "github.com/mikedll/gscan8",
+	"GoVersion": "go1.11",
+	"GodepVersion": "v80",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/gosimple/slug",
+			"Comment": "v1.2.0-1-g5a8a61f",
+			"Rev": "5a8a61f2d23aa140daaa615aeff3fc0e9060a711"
+		},
+		{
+			"ImportPath": "github.com/jinzhu/gorm",
+			"Comment": "v1.9.1-32-g742154b",
+			"Rev": "742154be9a26e849f02d296073c077e0a7c23828"
+		},
+		{
+			"ImportPath": "github.com/jinzhu/inflection",
+			"Rev": "04140366298a54a039076d798123ffa108fff46c"
+		},
+		{
+			"ImportPath": "github.com/jinzhu/now",
+			"Rev": "ed742868f2aebdb1c0c437bf4f7257f88834b66f"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-sqlite3",
+			"Comment": "v1.9.0-23-g0a88db3",
+			"Rev": "0a88db3545c4089ce0f555f496bfc78c491699e5"
+		},
+		{
+			"ImportPath": "github.com/microcosm-cc/bluemonday",
+			"Comment": "v1.0.1",
+			"Rev": "82c7118e8ccf7403d4860175d97bb635e8e28239"
+		},
+		{
+			"ImportPath": "github.com/qor/assetfs",
+			"Rev": "ff57fdc13a148d39c3e930cb27c7eaf82e376891"
+		},
+		{
+			"ImportPath": "github.com/qor/qor",
+			"Comment": "v1.0-154-ga9b667cb",
+			"Rev": "a9b667cbbf18e5b11cca010970b5a9dc40855ffd"
+		},
+		{
+			"ImportPath": "github.com/qor/qor/utils",
+			"Comment": "v1.0-154-ga9b667cb",
+			"Rev": "a9b667cbbf18e5b11cca010970b5a9dc40855ffd"
+		},
+		{
+			"ImportPath": "github.com/qor/render",
+			"Comment": "v1.0-46-g63566e4",
+			"Rev": "63566e46f01b134ae9882a59a06518e82a903231"
+		},
+		{
+			"ImportPath": "github.com/rainycape/unidecode",
+			"Rev": "cb7f23ec59bec0d61b19c56cd88cee3d0cc1870c"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html",
+			"Rev": "146acd28ed5894421fb5aac80ca93bc1b1f46f87"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html/atom",
+			"Rev": "146acd28ed5894421fb5aac80ca93bc1b1f46f87"
+		}
+	]
+}
