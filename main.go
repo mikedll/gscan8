@@ -24,13 +24,13 @@ func main() {
 		ViewPaths:  []string{},
 		DefaultLayout: "",
 		FuncMapMaker: nil,
-	})	
+	})
 
-	var root = func(w http.ResponseWriter, req *http.Request) {
+	root := func(w http.ResponseWriter, req *http.Request) {
 		ctx := map[string]string{"Name": "Carol Outer"}
 		Render.Execute("index", ctx, req, w)
 	}
-
+	
 	http.Handle("/", http.HandlerFunc(root))
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {

@@ -59,22 +59,14 @@
      class App extends React.Component {
          render() {
              return (
-                 <div class="gist">A gist.</div>
+                 <div className="gist">A gist.</div>
              )
          }
      }
 
-     $(() => {
-         console.log("loaded.")
-         ReactDOM.render(
-             <h1>
-             Hello, world!
-             </h1>,
-             document.getElementById('app-root')
-         );
-         
-
-     });     
+                 $(() => {
+                   ReactDOM.render(<App/>, document.getElementById('app-root'))
+                 })
     </script>
     
   </body>
