@@ -4,7 +4,7 @@
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"/>
 
-    <title>Michael Rivera</title>
+    <title>GScan8</title>
 
     <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
@@ -33,7 +33,7 @@
     <div class="container main-cont">
       <div class="row">
         <div class="col">
-          <h3>GScan8 - Welcome {{ .Name }} </h3>
+          <h3>GScan8 - Welcome</h3>
         </div>
       </div>
       
@@ -56,16 +56,28 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 
     <script type="text/babel" >
-     class App extends React.Component {
-         render() {
+      const __bootstrap =  {{ .Bootstrap }}
+      
+      class App extends React.Component {
+        constructor(props) {
+          super(props)
+        }
+      
+        render() {
+          const gists = this.props.gists.map(function(g) { return (
+            <tr key={g.href}>
+              <th>{g.title}</th><th>{g.href}</th>
+            </tr>
+            )})
+            
              return (
-                 <div className="gist">A gist.</div>
+               <div className="gist"><table className="table table-bordered"><thead><tr><td>Name of Gist</td><td>Link</td></tr></thead><tbody>{gists}</tbody></table></div>
              )
          }
      }
 
                  $(() => {
-                   ReactDOM.render(<App/>, document.getElementById('app-root'))
+                   ReactDOM.render(<App gists={__bootstrap}/>, document.getElementById('app-root'))
                  })
     </script>
     

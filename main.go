@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"github.com/qor/render"
+	"html/template"
 )
 
 
@@ -17,7 +18,14 @@ type TempParams struct {
 	Name string
 }
 
+var sBootstrap template.HTML
+
 func main() {
+	sBootstrap = template.HTML(`[
+        {title: "A neat gist", href: "https://gist.github.com/mikedll/8eaa6df25ac7a10ae3ded33e7f00b306"},
+        {title: "Cute Gist", href: "https://gist.github.com/mikedll/db0bbe17ddfa389eada54682f4a5b4c5"}
+      ]`)
+
 	fmt.Println("Starting server...")
 
 	Render := render.New(&render.Config{
@@ -27,7 +35,7 @@ func main() {
 	})
 
 	root := func(w http.ResponseWriter, req *http.Request) {
-		ctx := map[string]string{"Name": "Carol Outer"}
+		ctx := map[string]template.HTML{"Bootstrap": sBootstrap}
 		Render.Execute("index", ctx, req, w)
 	}
 	
