@@ -8,6 +8,7 @@ import (
 	"log"
 	"github.com/qor/render"
 	"html/template"
+	"encoding/json"
 )
 
 var addr = flag.String("addr", ":8081", "http service address")
@@ -19,14 +20,14 @@ type TempParams struct {
 var sBootstrap template.HTML
 
 func main() {
-	main2()
-	
-	sBootstrap = template.HTML(`[
-        {title: "A neat gist", href: "https://gist.github.com/mikedll/8eaa6df25ac7a10ae3ded33e7f00b306"},
-        {title: "Cute Gist", href: "https://gist.github.com/mikedll/db0bbe17ddfa389eada54682f4a5b4c5"}
-      ]`)
+	// makeGists()
 
-	fmt.Println("Starting server...")
+	gists := getGists()
+	gistsJson, err := json.Marshal(gists)
+	if err != nil {
+		log.Println("unable to find gists: ", err)
+		gistsJson = []byte{}
+	}
 
 	Render := render.New(&render.Config{
 		ViewPaths:  []string{},
@@ -35,12 +36,14 @@ func main() {
 	})
 
 	root := func(w http.ResponseWriter, req *http.Request) {
+		sBootstrap = template.HTML(string(gistsJson))
 		ctx := map[string]template.HTML{"Bootstrap": sBootstrap}
 		Render.Execute("index", ctx, req, w)
 	}
 	
+	fmt.Println("Starting server...")
 	http.Handle("/", http.HandlerFunc(root))
-	err := http.ListenAndServe(*addr, nil)
+	err = http.ListenAndServe(*addr, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
