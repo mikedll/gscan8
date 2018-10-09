@@ -20,7 +20,7 @@ type TempParams struct {
 var sBootstrap template.HTML
 
 func main() {
-	// makeGists()
+	makeGists()
 
 	gists := getGists()
 	gistsJson, err := json.Marshal(gists)
