@@ -66,7 +66,7 @@
         render() {
           const gists = this.props.gists.map(function(g) { return (
             <tr key={g.href}>
-              <th>{g.title}</th><th>{g.href}</th>
+              <th>{g.title}</th><th><a href={g.href}>{g.href}</a></th>
             </tr>
             )})
             
