@@ -2,7 +2,7 @@
 package main
 
 import (
-	"flag"
+	"os"
 	"net/http"
 	"fmt"
 	"log"
@@ -11,8 +11,6 @@ import (
 	"encoding/json"
 )
 
-var addr = flag.String("addr", ":8081", "http service address")
-
 type TempParams struct {
 	Name string
 }
@@ -20,6 +18,14 @@ type TempParams struct {
 var sBootstrap template.HTML
 
 func main() {
+	
+	var addr string = ":8081"
+	port := os.Getenv("PORT")
+
+	if port != "" {
+		addr = fmt.Sprintf(":%s", port)
+	}
+	
 	makeGists()
 
 	gists := getGists()
@@ -43,7 +49,7 @@ func main() {
 	
 	fmt.Println("Starting server...")
 	http.Handle("/", http.HandlerFunc(root))
-	err = http.ListenAndServe(*addr, nil)
+	err = http.ListenAndServe(addr, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
