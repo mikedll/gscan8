@@ -25,9 +25,10 @@ func main() {
 		DefaultLayout: "",
 		FuncMapMaker: nil,
 	})	
-	
+
 	var root = func(w http.ResponseWriter, req *http.Request) {
-		Render.Execute("index", nil, req, w)
+		ctx := map[string]string{"Name": "Carol Outer"}
+		Render.Execute("index", ctx, req, w)
 	}
 
 	http.Handle("/", http.HandlerFunc(root))
