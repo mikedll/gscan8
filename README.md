@@ -1,5 +1,5 @@
 
-Go application to scan [Github gists](https://gist.github.com/).
+[Go](https://golang.org/) application to scan [Github gists](https://gist.github.com/).
 
 # Setup
 
