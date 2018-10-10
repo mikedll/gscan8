@@ -9,6 +9,7 @@ import (
 	"github.com/qor/render"
 	"html/template"
 	"encoding/json"
+	"flag"
 )
 
 type TempParams struct {
@@ -17,17 +18,43 @@ type TempParams struct {
 
 var sBootstrap template.HTML
 
+var isProduction bool
+
 func main() {
+	isProduction = false
+
+	flag.Parse()
 	
 	var addr string = ":8081"
 	port := os.Getenv("PORT")
 
+	// Going to use this to determine production environment...LOL!
 	if port != "" {
+		isProduction = true
 		addr = fmt.Sprintf(":%s", port)
 	}
-	
-	makeGists()
 
+	if flag.NArg() > 0 && flag.Arg(0) == "schema" {
+		err := makeSchema(isProduction)
+		if err != nil {
+			log.Println("failed to create schema.")
+			return
+		}
+		
+		fmt.Println("created schema.")
+		return
+	}
+	
+	if flag.NArg() > 0 && flag.Arg(0) == "sample" {
+		err := makeGists(isProduction)
+		if err != nil {
+			log.Println("failed to make sample gists", err)
+			return
+		}
+		log.Println("sample gists created.")
+		return
+	}
+	
 	gists := getGists()
 	gistsJson, err := json.Marshal(gists)
 	if err != nil {

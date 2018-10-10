@@ -5,6 +5,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
+	"io/ioutil"
+	"errors"
+	"fmt"
 )
 
 type Gist struct {
@@ -55,24 +58,74 @@ func getGists() (collected []Gist) {
 	return
 }
 
-func makeGists() {
-	os.Remove(dbPath)
+func schemaString(isProduction bool) (sql string, error error) {
+	var pth string
+	
+	if isProduction {
+		pth = "config/spostgres.sql"
+	} else {
+		pth = "config/ssqlite.sql"
+	}
 
-	db, err := sql.Open("sqlite3", dbPath)
+	if _, err := os.Stat(pth); err == nil {
+		bytes, err := ioutil.ReadFile(pth)
+		if err != nil {
+			error = errors.New("unable to open schema file")
+			return
+		}
+		sql = string(bytes)
+	}
+
+	return
+}
+
+func getDb(isProduction bool) (db *sql.DB, err error){
+	if isProduction {
+		log.Fatal("postgres not implemented yet")
+	} else {
+		db, err := sql.Open("sqlite3", dbPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return db, err
+	}
+
+	return nil, errors.New("didn't get database connection")
+}
+
+func makeSchema(isProduction bool) (error) {
+	if (!isProduction) {
+		os.Remove(dbPath)
+	}
+
+	db, err := getDb(isProduction)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	sqlStmt := `
-	CREATE TABLE gists (id INTEGER NOT NULL PRIMARY KEY, title TEXT, url TEXT);
-	DELETE FROM gists;
-	`
-	_, err = db.Exec(sqlStmt)
+	var schemaStmt string
+	schemaStmt, err = schemaString(isProduction)
 	if err != nil {
-		log.Printf("%q: %s\n", err, sqlStmt)
-		return
+		fmt.Println("unable to open schema file", err)
+		return err
 	}
+	
+	_, err = db.Exec(schemaStmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, schemaStmt)
+		return err
+	}
+
+	return nil
+}
+
+func makeGists(isProduction bool) (error) {
+	db, err := getDb(isProduction)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -80,7 +133,7 @@ func makeGists() {
 	}
 	stmt, err := tx.Prepare("INSERT INTO gists (id, title, url) VALUES(?, ?, ?)")
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("failed to prepare insert statement")
 	}
 	defer stmt.Close()
 
@@ -88,8 +141,10 @@ func makeGists() {
 	for _, f := range fetched {
 		_, err = stmt.Exec(f.Id, f.Title, f.Url)
 		if err != nil {
-			log.Fatal(err)
+			return errors.New("insert failed")
 		}
 	}
 	tx.Commit()
+	
+	return err
 }
