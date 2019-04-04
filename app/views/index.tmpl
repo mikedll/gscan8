@@ -12,6 +12,7 @@
     <!-- Don't use this in production: -->
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
 
+
     <!-- <script type="text/babel" src="main.jsx" ></script> -->    
     <style>
      .main-cont {
@@ -55,31 +56,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 
-    <script type="text/babel" >
-      const __bootstrap =  {{ .Bootstrap }}
-      
-      class App extends React.Component {
-        constructor(props) {
-          super(props)
-        }
-      
-        render() {
-          const gists = this.props.gists.map(function(g) { return (
-            <tr key={g.id}>
-              <th>{g.title}</th><th><a href={g.url}>{g.url}</a></th>
-            </tr>
-            )})
-            
-             return (
-               <div className="gists"><table className="table table-bordered"><thead><tr><td>Name of Gist</td><td>Link</td></tr></thead><tbody>{gists}</tbody></table></div>
-             )
-         }
-     }
-
-                 $(() => {
-                   ReactDOM.render(<App gists={__bootstrap}/>, document.getElementById('app-root'))
-                 })
+    <script type="text/babel">
+      window.__bootstrap =  {{ .Bootstrap }}
     </script>
+    <script type="text/babel" src="index.jsx" ></script>
     
   </body>
 </html>

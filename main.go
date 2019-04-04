@@ -102,10 +102,16 @@ func main() {
 		return
 	}
 
+	defaultHandler := func(w http.ResponseWriter, req *http.Request) {
+		sendFile("index.jsx", w)
+	}
+
 	fmt.Println("Starting server...")
 	http.Handle("/", http.HandlerFunc(root))
 
 	http.Handle("/api/gists/search", http.HandlerFunc(search))
+
+	http.Handle("/index.jsx", http.HandlerFunc(defaultHandler))
 
 	err = http.ListenAndServe(addr, nil)
 	if err != nil {
