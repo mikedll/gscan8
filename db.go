@@ -1,7 +1,7 @@
 package main
 
 import (
-//	"github.com/jinzhu/gorm"
+	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"log"
@@ -48,41 +48,25 @@ func searchGistFiles(query string) (results []Snippet) {
 	// search backward/forward to discover nearby lines.
 
 	// assemble snippets with languages
-	return results
+	return
 }
 
-func getGistFiles() (collected []GistFile) {
+func getGistFiles() (results []GistFile) {
 	connString := "user=goscan8dev dbname=goscan8dev"
-	db, err := sql.Open("postgres", connString)
+	db, err := gorm.Open("postgres", connString)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, vendor_id, title, url, body FROM gists")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var cur GistFile
-		err = rows.Scan(&cur.Id, &cur.VendorId, &cur.Title, &cur.Url, &cur.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		collected = append(collected, cur)
-	}
-	err = rows.Err()
-	if err != nil {
+	if err = db.Find(&results).Error; err != nil {
 		log.Fatal(err)
 	}
 
 	return
 }
 
-func schemaString(isProduction bool) (sql string, error error) {
+func schemaString() (sql string, error error) {
 	pth := "config/spostgres.sql"
 
 	bytes, err := ioutil.ReadFile(pth)
@@ -95,16 +79,9 @@ func schemaString(isProduction bool) (sql string, error error) {
 	return
 }
 
-func getDb(isProduction bool) (db *sql.DB, err error){
-	db, err := sql.Open("postgres", dbPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return db, err
-}
-
 func makeSchema() (error) {
-	db, err := getDb()
+	connString := "user=goscan8dev dbname=goscan8dev"
+	db, err := gorm.Open("postgres", dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -126,31 +103,21 @@ func makeSchema() (error) {
 	return nil
 }
 
-func makeGistFiles(isProduction bool) (error) {
-	db, err := getDb(isProduction)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
+func makeGistFiles() (error) {
+	connString := "user=goscan8dev dbname=goscan8dev"
+	db, err := gorm.Open("postgres", dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	stmt, err := tx.Prepare("INSERT INTO gists (id, title, url) VALUES(?, ?, ?)")
-	if err != nil {
-		return errors.New("failed to prepare insert statement")
-	}
-	defer stmt.Close()
+	defer db.Close()
 
 	fetched := remoteGistFiles()
 	for _, f := range fetched {
-		_, err = stmt.Exec(f.Id, f.Title, f.Url)
+		// _, err = stmt.Exec(f.Id, f.Title, f.Url)
 		if err != nil {
 			return errors.New("insert failed")
 		}
 	}
-	tx.Commit()
 	
 	return err
 }
