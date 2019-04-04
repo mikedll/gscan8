@@ -35,8 +35,10 @@ func main() {
 		addr = fmt.Sprintf(":%s", port)
 	}
 
+	openDbForProject()
+
 	if flag.NArg() > 0 && flag.Arg(0) == "schema" {
-		err := makeSchema(isProduction)
+		err := makeSchema()
 		if err != nil {
 			log.Println("failed to create schema.")
 			return
@@ -47,7 +49,7 @@ func main() {
 	}
 	
 	if flag.NArg() > 0 && flag.Arg(0) == "sample" {
-		err := makeGists(isProduction)
+		err := makeGistFiles()
 		if err != nil {
 			log.Println("failed to make sample gists", err)
 			return
@@ -77,7 +79,7 @@ func main() {
 
 	search := func(w http.ResponseWriter, req *http.Request) {
 		// search db for json
-		snippets := searchGistFiless(req.query)
+		snippets := searchGistFiles(req.query)
 		snippetsJson, err := json.Marshal(snippets)
 		if err != nil {
 			log.Println("error while marshalling snippets: ", err)
