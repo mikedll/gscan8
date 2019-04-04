@@ -1,49 +1,73 @@
 package main
 
 import (
-	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
+//	"github.com/jinzhu/gorm"
+	_ "github.com/lib/pq"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"log"
-	"os"
+//	"os"
 	"io/ioutil"
 	"errors"
 	"fmt"
 )
 
-type Gist struct {
-  Id int        `json:"id"`
-	Title string  `json:"title"`
-	Url string   `json:"url"`
+type GistFile struct {
+  Id int          `json:"id"`
+	VendorId string `json:"vendor_id"`
+	Title string    `json:"title"`
+	Filename string `json:"filename"`
+	Body string     `json:"body"`
+	Language string `json:"language"`
+}
+
+type Snippet struct {
+	Id int          `json:"id"`
+	Title int       `json:"title"`
+	Body string     `json:"body"`
+	Language string `json:"language"`
 }
 
 const dbPath string = "./storage/db.sqlite3"
 
 // remoteGists returns fake data for seeding into a database.
-func remoteGists() []Gist {
-	fetched := []Gist{
-		Gist{1, "purchase_orders.html", "https://gist.github.com/mikedll/8eaa6df25ac7a10ae3ded33e7f00b306"},
-		Gist{2, "gist:8ea5f31a1269ed482f3ad0f7b274ee05", "https://gist.github.com/mikedll/8ea5f31a1269ed482f3ad0f7b274ee05"},
+func remoteGistFiles() []GistFile {
+	fetched := []GistFile{
+		GistFile{1, "8eaa6df25ac7a10ae3ded33e7f00b306", "purchase_orders.html", "blah.py", "some code", "Ruby"},
+		GistFile{2, "8ea5f31a1269ed482f3ad0f7b274ee05", "app_world.txt", "blah.txt", "some text", "Ruby"},
 	}
 
 	return fetched
 }
 
-func getGists() (collected []Gist) {
-	db, err := sql.Open("sqlite3", dbPath)
+func searchGistFiles(query string) (results []Snippet) {
+	results = []Snippet{}
+	// search db, get back bodies
+
+	// search again, get indices.
+
+	// search backward/forward to discover nearby lines.
+
+	// assemble snippets with languages
+	return results
+}
+
+func getGistFiles() (collected []GistFile) {
+	connString := "user=goscan8dev dbname=goscan8dev"
+	db, err := sql.Open("postgres", connString)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, title, url FROM gists")
+	rows, err := db.Query("SELECT id, vendor_id, title, url, body FROM gists")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var cur Gist
-		err = rows.Scan(&cur.Id, &cur.Title, &cur.Url)
+		var cur GistFile
+		err = rows.Scan(&cur.Id, &cur.VendorId, &cur.Title, &cur.Url, &cur.Body)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -59,46 +83,28 @@ func getGists() (collected []Gist) {
 }
 
 func schemaString(isProduction bool) (sql string, error error) {
-	var pth string
-	
-	if isProduction {
-		pth = "config/spostgres.sql"
-	} else {
-		pth = "config/ssqlite.sql"
-	}
+	pth := "config/spostgres.sql"
 
-	if _, err := os.Stat(pth); err == nil {
-		bytes, err := ioutil.ReadFile(pth)
-		if err != nil {
-			error = errors.New("unable to open schema file")
-			return
-		}
-		sql = string(bytes)
+	bytes, err := ioutil.ReadFile(pth)
+	if err != nil {
+		error = errors.New("unable to open schema file")
+		return
 	}
+	sql = string(bytes)
 
 	return
 }
 
 func getDb(isProduction bool) (db *sql.DB, err error){
-	if isProduction {
-		log.Fatal("postgres not implemented yet")
-	} else {
-		db, err := sql.Open("sqlite3", dbPath)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return db, err
+	db, err := sql.Open("postgres", dbPath)
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	return nil, errors.New("didn't get database connection")
+	return db, err
 }
 
-func makeSchema(isProduction bool) (error) {
-	if (!isProduction) {
-		os.Remove(dbPath)
-	}
-
-	db, err := getDb(isProduction)
+func makeSchema() (error) {
+	db, err := getDb()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -120,7 +126,7 @@ func makeSchema(isProduction bool) (error) {
 	return nil
 }
 
-func makeGists(isProduction bool) (error) {
+func makeGistFiles(isProduction bool) (error) {
 	db, err := getDb(isProduction)
 	if err != nil {
 		return err
@@ -137,7 +143,7 @@ func makeGists(isProduction bool) (error) {
 	}
 	defer stmt.Close()
 
-	fetched := remoteGists()
+	fetched := remoteGistFiles()
 	for _, f := range fetched {
 		_, err = stmt.Exec(f.Id, f.Title, f.Url)
 		if err != nil {

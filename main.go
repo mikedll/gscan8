@@ -27,9 +27,10 @@ func main() {
 	
 	var addr string = ":8081"
 	port := os.Getenv("PORT")
+	appEnv := os.Getenv("APP_ENV")
 
 	// Going to use this to determine production environment...LOL!
-	if port != "" {
+	if appEnv == "production" || port != "" {
 		isProduction = true
 		addr = fmt.Sprintf(":%s", port)
 	}
@@ -55,7 +56,7 @@ func main() {
 		return
 	}
 	
-	gists := getGists()
+	gists := getGistFiles()
 	gistsJson, err := json.Marshal(gists)
 	if err != nil {
 		log.Println("unable to find gists: ", err)
@@ -73,9 +74,29 @@ func main() {
 		ctx := map[string]template.HTML{"Bootstrap": sBootstrap}
 		Render.Execute("index", ctx, req, w)
 	}
+
+	search := func(w http.ResponseWriter, req *http.Request) {
+		// search db for json
+		snippets := searchGistFiless(req.query)
+		snippetsJson, err := json.Marshal(snippets)
+		if err != nil {
+			log.Println("error while marshalling snippets: ", err)
+			snippetsJson = []byte{}
+			// StatusInternalServerError           
+			// write "Error while marshalling snippets.
+			return
+		}
+		
+		w.Header.Add("Content-Type", "application/json")
+		w.write(string(snippetsJson))
+		return
+	}
 	
 	fmt.Println("Starting server...")
 	http.Handle("/", http.HandlerFunc(root))
+
+	http.Handle("/api/gists/search", http.HandlerFunc(search))
+
 	err = http.ListenAndServe(addr, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
