@@ -1,15 +1,15 @@
-
 package main
 
 import (
-	"os"
-	"net/http"
-	"fmt"
-	"log"
-	"github.com/qor/render"
-	"html/template"
 	"encoding/json"
 	"flag"
+	"fmt"
+	"html/template"
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/qor/render"
 )
 
 type TempParams struct {
@@ -24,7 +24,7 @@ func main() {
 	isProduction = false
 
 	flag.Parse()
-	
+
 	var addr string = ":8081"
 	port := os.Getenv("PORT")
 	appEnv := os.Getenv("APP_ENV")
@@ -36,28 +36,36 @@ func main() {
 	}
 
 	openDbForProject(isProduction)
+	defer closeDbForProject()
 
-	if flag.NArg() > 0 && flag.Arg(0) == "schema" {
-		err := makeSchema()
-		if err != nil {
-			log.Println("failed to create schema.")
-			return
+	if flag.NArg() > 0 {
+		if flag.Arg(0) == "schema" {
+			err := makeSchema()
+			if err != nil {
+				log.Println("failed to create schema.")
+				return
+			}
+
+			fmt.Println("created schema.")
+		} else if flag.Arg(0) == "sample" {
+			err := makeGistFiles()
+			if err != nil {
+				log.Println("failed to make sample gists", err)
+				return
+			}
+			log.Println("sample gists created.")
+		} else if flag.Arg(0) == "empty" {
+			err := emptyDb()
+			if err != nil {
+				log.Println("failed to empty db", err)
+				return
+			}
+
+			log.Println("emptied database.")
 		}
-		
-		fmt.Println("created schema.")
 		return
 	}
-	
-	if flag.NArg() > 0 && flag.Arg(0) == "sample" {
-		err := makeGistFiles()
-		if err != nil {
-			log.Println("failed to make sample gists", err)
-			return
-		}
-		log.Println("sample gists created.")
-		return
-	}
-	
+
 	gists := getGistFiles()
 	gistsJson, err := json.Marshal(gists)
 	if err != nil {
@@ -66,9 +74,9 @@ func main() {
 	}
 
 	Render := render.New(&render.Config{
-		ViewPaths:  []string{},
+		ViewPaths:     []string{},
 		DefaultLayout: "",
-		FuncMapMaker: nil,
+		FuncMapMaker:  nil,
 	})
 
 	root := func(w http.ResponseWriter, req *http.Request) {
@@ -84,16 +92,16 @@ func main() {
 		if err != nil {
 			log.Println("error while marshalling snippets: ", err)
 			snippetsJson = []byte{}
-			// StatusInternalServerError           
+			// StatusInternalServerError
 			// write "Error while marshalling snippets.
 			return
 		}
-		
+
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(snippetsJson)
 		return
 	}
-	
+
 	fmt.Println("Starting server...")
 	http.Handle("/", http.HandlerFunc(root))
 
@@ -103,5 +111,4 @@ func main() {
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
-	closeDbForProject()
 }
