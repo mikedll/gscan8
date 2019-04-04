@@ -29,11 +29,15 @@ type Snippet struct {
 
 const dbPath string = "./storage/db.sqlite3"
 
-var dbConn gorm.DB
+var dbConn *gorm.DB
 
-func openDbForProject() {
-	connString := "user=goscan8dev dbname=goscan8dev"
-	dbConn, err := gorm.Open("postgres", connString)
+func openDbForProject(isProduction bool) {
+	var err error
+	connString := "host=localhost user=gscan8dev dbname=gscan8development password=thintent"
+	if !isProduction {
+		 connString = connString + " sslmode=disable"
+	}
+	dbConn, err = gorm.Open("postgres", connString)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -88,32 +92,8 @@ func getGistFiles() (results []GistFile) {
 	return
 }
 
-// func schemaString() (sql string, error error) {
-// 	pth := "config/spostgres.sql"
-
-// 	bytes, err := ioutil.ReadFile(pth)
-// 	if err != nil {
-// 		error = errors.New("unable to open schema file")
-// 		return
-// 	}
-// 	sql = string(bytes)
-
-// 	return
-// }
-
 func makeSchema() (error) {
-// 	var schemaStmt string
-// 	schemaStmt, err = schemaString(isProduction)
-// 	if err != nil {
-// 		fmt.Println("unable to open schema file", err)
-// 		return err
-// 	}
-	
-// 	_, err = db.Exec(schemaStmt)
-// 	if err != nil {
-// 		log.Printf("%q: %s\n", err, schemaStmt)
-// 		return err
-// 	}
+	dbConn.AutoMigrate(&GistFile{})
 
  	return nil
 }

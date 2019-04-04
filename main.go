@@ -35,7 +35,7 @@ func main() {
 		addr = fmt.Sprintf(":%s", port)
 	}
 
-	openDbForProject()
+	openDbForProject(isProduction)
 
 	if flag.NArg() > 0 && flag.Arg(0) == "schema" {
 		err := makeSchema()
@@ -79,7 +79,7 @@ func main() {
 
 	search := func(w http.ResponseWriter, req *http.Request) {
 		// search db for json
-		snippets := searchGistFiles(req.query)
+		snippets := searchGistFiles(req.URL.Query().Get("q"))
 		snippetsJson, err := json.Marshal(snippets)
 		if err != nil {
 			log.Println("error while marshalling snippets: ", err)
@@ -89,8 +89,8 @@ func main() {
 			return
 		}
 		
-		w.Header.Add("Content-Type", "application/json")
-		w.write(string(snippetsJson))
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(snippetsJson)
 		return
 	}
 	
@@ -103,4 +103,5 @@ func main() {
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
+	closeDbForProject()
 }
