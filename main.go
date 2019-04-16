@@ -103,7 +103,11 @@ func main() {
 	}
 
 	defaultHandler := func(w http.ResponseWriter, req *http.Request) {
-		sendFile("index.jsx", w)
+		file := "index.jsx"
+		err := sendFile(file, w)
+		if err != nil {
+			log.Println("Unable to serve static file: ", file)
+		}
 	}
 
 	fmt.Println("Starting server...")
