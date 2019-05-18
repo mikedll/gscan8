@@ -13,7 +13,7 @@ import (
 
 type User struct {
 	Id           int64      `gorm:"PRIMARY_KEY;AUTO_INCREMENT"`
-	Username     string     `gorm:"not null"`
+	Username     string     `gorm:"not null;unique_index"`
 	AccessToken  string     `gorm:"not null"`
 	TokenExpiry  time.Time
 }
@@ -74,8 +74,8 @@ func mockGistFiles() ([]GistFile, error) {
 	return fetched, nil
 }
 
-func createUser(user *User) error {
-	dbConn.Create(user)
+func findUserByLogin(login string, user *User) error {
+	dbConn.Where("username = ?", login).First(user)
 	if err := dbConn.Error; err != nil {
 		return errors.New("createUser failed")
 	}

@@ -144,12 +144,16 @@ func main() {
 	}
 
   oauth2GithubCallback := func(w http.ResponseWriter, req *http.Request) {
-		writeError := func(msg string) {
+		writeError := func(msg string, errorNum int) {
 			w.Header().Add("Content-Type", "text/html")		
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(errorNum)
 			w.Write([]byte("<br/>" + msg))
 		}
 
+		writeInteralServerError := func(msg string) {
+			writeError(msg, http.StatusInternalServerError)
+		}
+		
 		cookies := req.Cookies()
 
 		var stateCookieVal string
@@ -164,9 +168,7 @@ func main() {
 		if(stateInUrl == stateCookieVal) {
 			token, err := oauth2Conf.Exchange(oauth2.NoContext, code)
 			if err != nil {
-				w.Header().Add("Content-Type", "text/html")
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte("<br/>Could not get access token from code, error: " + err.Error()))
+				writeInteralServerError("Could not get access token from code, error: " + err.Error())
 				return
 			}
 
@@ -176,7 +178,7 @@ func main() {
 			userUrl := "https://api.github.com/user"
 			response, err := client.Get(userUrl)
 			if err != nil {
-				writeError("Error fetching user information at " + userUrl)
+				writeInteralServerError("Error fetching user information at " + userUrl)
 				return
 			}
 
@@ -192,27 +194,42 @@ func main() {
 			}
 			
 			if err != io.EOF {
-				writeError("Unable to read response from Github.")
+				writeInteralServerError("Unable to read response from Github.")
 				return
 			}
 
 			userApiResponse := UserApiResponse{}
 			json.Unmarshal(responseBody, &userApiResponse)
 			
-			user := User{Username: userApiResponse.Login, AccessToken: token.AccessToken, TokenExpiry: token.Expiry}
-
-			err = createUser(&user)
+			userQueried := User{}
+			err = findUserByLogin(userApiResponse.Login, &userQueried)
 			if err != nil {
-				writeError("Unable to create user.")
+				writeInteralServerError("Unable to query for user: " + err.Error())
 				return
 			}
 
-			w.Header().Add("Content-Type", "application/json")
-			w.Write(responseBody)
-		} else {			
-			w.Header().Add("Content-Type", "text/html")		
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("<br/>OAuth2 state variables did not match."))
+			userQueried.AccessToken = token.AccessToken
+			userQueried.TokenExpiry = token.Expiry
+			
+			if(dbConn.NewRecord(userQueried)) {
+				userQueried.Username = userApiResponse.Login
+				
+				dbConn.Create(&userQueried)
+				if err = dbConn.Error; err != nil {
+					writeInteralServerError("Unable to create user: " + err.Error())
+					return
+				}
+			} else {
+				dbConn.Save(&userQueried)
+				if err = dbConn.Error; err != nil {
+					writeInteralServerError("Unable to save user: " + err.Error())
+				}
+			}
+
+			w.Header().Add("Content-Type", "text/html")
+			w.Write([]byte("Saved user."))
+		} else {
+			writeError("OAuth2 state variables did not match.", http.StatusBadRequest)
 		}
 		fmt.Println("Received callback.")
 	}
