@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"io"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
@@ -16,8 +17,8 @@ import (
 	"golang.org/x/oauth2/github"
 )
 
-type TempParams struct {
-	Name string
+type UserApiResponse struct {
+	Login       string  `json:"login"`
 }
 
 var sBootstrap template.HTML
@@ -143,6 +144,12 @@ func main() {
 	}
 
   oauth2GithubCallback := func(w http.ResponseWriter, req *http.Request) {
+		writeError := func(msg string) {
+			w.Header().Add("Content-Type", "text/html")		
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("<br/>" + msg))
+		}
+
 		cookies := req.Cookies()
 
 		var stateCookieVal string
@@ -163,9 +170,40 @@ func main() {
 				return
 			}
 
-			w.Header().Add("Content-Type", "text/html")		
-			w.Write([]byte("Got access token from code= " + token.AccessToken))
-			w.Write([]byte("<br/>Got refresh token from code= " + token.RefreshToken))
+			// Access token obtained.
+			client := oauth2Conf.Client(oauth2.NoContext, token)
+
+			userUrl := "https://api.github.com/user"
+			response, err := client.Get(userUrl)
+			if err != nil {
+				writeError("Error fetching user information at " + userUrl)
+				return
+			}
+
+			// UserApiResponse
+			maxSize := 1024 * 50
+			buf := make([]byte, maxSize)
+			var n int
+			n, err = response.Body.Read(buf)
+			if err != io.EOF {
+				writeError("Unable to read response from Github.")
+				return
+			}
+			responseBody := buf[0:n]
+
+			userApiResponse := UserApiResponse{}
+			json.Unmarshal(responseBody, &userApiResponse)
+			
+			user := User{Username: userApiResponse.Login, AccessToken: token.AccessToken, TokenExpiry: token.Expiry}
+
+			err = createUser(&user)
+			if err != nil {
+				writeError("Unable to create user.")
+				return
+			}
+
+			w.Header().Add("Content-Type", "application/json")
+			w.Write(responseBody)
 		} else {			
 			w.Header().Add("Content-Type", "text/html")		
 			w.WriteHeader(http.StatusBadRequest)

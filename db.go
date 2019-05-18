@@ -5,16 +5,17 @@ import (
 	"io/ioutil"
 	"log"
 	"strconv"
-
+	"time"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 )
 
 type User struct {
-	Id        int64   `gorm:"PRIMARY_KEY;AUTO_INCREMENT"`
-	Username  string  `gorm:"not null"`
-	Token     string
+	Id           int64      `gorm:"PRIMARY_KEY;AUTO_INCREMENT"`
+	Username     string     `gorm:"not null"`
+	AccessToken  string     `gorm:"not null"`
+	TokenExpiry  time.Time
 }
 
 type GistFile struct {
@@ -32,8 +33,6 @@ type Snippet struct {
 	Body     string `json:"body"`
 	Language string `json:"language"`
 }
-
-const dbPath string = "./storage/db.sqlite3"
 
 var dbConn *gorm.DB
 
@@ -73,6 +72,15 @@ func mockGistFiles() ([]GistFile, error) {
 	}
 
 	return fetched, nil
+}
+
+func createUser(user *User) error {
+	dbConn.Create(user)
+	if err := dbConn.Error; err != nil {
+		return errors.New("createUser failed")
+	}
+
+	return nil
 }
 
 func searchGistFiles(query string) (results []Snippet) {
