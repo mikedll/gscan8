@@ -15,13 +15,13 @@ import (
 	"github.com/qor/render"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
+	"github.com/gorilla/sessions"
+	"github.com/gorilla/securecookie"
 )
 
 type UserApiResponse struct {
 	Login       string  `json:"login"`
 }
-
-var sBootstrap template.HTML
 
 var isProduction bool
 
@@ -61,7 +61,7 @@ func main() {
 				return
 			}
 
-			fmt.Println("created schema.")
+			log.Println("created schema.")
 		} else if flag.Arg(0) == "sample" {
 			err := makeGistFiles()
 			if err != nil {
@@ -77,15 +77,23 @@ func main() {
 			}
 
 			log.Println("emptied database.")
+		} else if flag.Arg(0) == "keygen" {
+			key := securecookie.GenerateRandomKey(32)
+			if key == nil {
+				log.Println("failed to generate random key")
+				return
+			}
+
+			log.Println("key: " + base64.StdEncoding.EncodeToString(key))
 		}
 		return
 	}
 
 	gists := getGistFiles()
-	gistsJson, err := json.Marshal(gists)
+	_, err := json.Marshal(gists)
 	if err != nil {
 		log.Println("unable to find gists: ", err)
-		gistsJson = []byte{}
+		_ = []byte{}
 	}
 
 	Render := render.New(&render.Config{
@@ -94,9 +102,36 @@ func main() {
 		FuncMapMaker:  nil,
 	})
 
+	keyBytes, decodeErr := base64.StdEncoding.DecodeString(os.Getenv("SESSION_KEY"))
+	if decodeErr != nil {
+		log.Println("Unable to decode session key.")
+		return
+	}
+	var sessionStore = sessions.NewCookieStore(keyBytes)
+	sessionName := "gscan8session"
+	
 	root := func(w http.ResponseWriter, req *http.Request) {
-		sBootstrap = template.HTML(string(gistsJson))
-		ctx := map[string]template.HTML{"Bootstrap": sBootstrap}
+
+		session, err := sessionStore.Get(req, sessionName)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		user := User{}
+		dbConn.Where("id = ?", session.Values["userId"]).First(&user)
+		if dbConn.Error != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		ctx := map[string]template.HTML{}
+		if !dbConn.NewRecord(user) {
+			ctx["username"] = template.HTML(user.Username)
+		} else {
+			ctx["username"] = template.HTML("(not logged in)")
+		}
+		
 		Render.Execute("index", ctx, req, w)
 	}
 
@@ -139,15 +174,13 @@ func main() {
 		w.Header().Add("Content-Type", "text/html")
 
 		url := oauth2Conf.AuthCodeURL(stateStr, oauth2.AccessTypeOffline)
-		fmt.Println("Redirecting to ", url)
+		log.Println("Redirecting to ", url)
 		http.Redirect(w, req, url, http.StatusFound)
 	}
 
   oauth2GithubCallback := func(w http.ResponseWriter, req *http.Request) {
 		writeError := func(msg string, errorNum int) {
-			w.Header().Add("Content-Type", "text/html")		
-			w.WriteHeader(errorNum)
-			w.Write([]byte("<br/>" + msg))
+			http.Error(w, msg, errorNum)
 		}
 
 		writeInteralServerError := func(msg string) {
@@ -168,7 +201,7 @@ func main() {
 		if(stateInUrl == stateCookieVal) {
 			token, err := oauth2Conf.Exchange(oauth2.NoContext, code)
 			if err != nil {
-				writeInteralServerError("Could not get access token from code, error: " + err.Error())
+				writeInteralServerError("Could not get access token from code=" + code + ", error: " + err.Error())
 				return
 			}
 
@@ -226,12 +259,19 @@ func main() {
 				}
 			}
 
-			w.Header().Add("Content-Type", "text/html")
-			w.Write([]byte("Saved user."))
+			session, err := sessionStore.Get(req, sessionName)
+			if err != nil {
+				writeInteralServerError(err.Error())
+				return
+			}
+			
+			session.Values["userId"] = userQueried.Id
+			session.Save(req, w)
+			http.Redirect(w, req, "/", http.StatusFound)
 		} else {
 			writeError("OAuth2 state variables did not match.", http.StatusBadRequest)
 		}
-		fmt.Println("Received callback.")
+		log.Println("Received callback.")
 	}
 	
 	defaultHandler := func(w http.ResponseWriter, req *http.Request) {
@@ -242,7 +282,7 @@ func main() {
 		}
 	}
 
-	fmt.Println("Starting server...")
+	log.Println("Starting server...")
 	http.Handle("/", http.HandlerFunc(root))
 
 	http.Handle("/oauth/github", http.HandlerFunc(oauth2Github))
