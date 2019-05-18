@@ -122,7 +122,8 @@ func main() {
 		Scopes:       []string{},
 		Endpoint: github.Endpoint,
 	}
-	
+
+	StateCookieName := "OAuth2-Github-State"
 	oauth2Github := func(w http.ResponseWriter, req *http.Request) {
 		stateStr, err := stateStr()
 		if err != nil {
@@ -131,19 +132,45 @@ func main() {
 			return
 		}
 
-		stateCookie := http.Cookie{Name: "OAuth2-Github-State", Value: stateStr, MaxAge: 60 * 15}
+		stateCookie := http.Cookie{Name: StateCookieName, Value: stateStr, MaxAge: 60 * 15}
 		http.SetCookie(w, &stateCookie)
 
 		w.Header().Add("Content-Type", "text/html")
 
 		url := oauth2Conf.AuthCodeURL(stateStr, oauth2.AccessTypeOffline)
 		fmt.Println("Redirecting to ", url)
-		http.Redirect(w, req, url, 302)
+		http.Redirect(w, req, url, http.StatusFound)
 	}
 
   oauth2GithubCallback := func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Add("Content-Type", "text/html")		
-		w.Write([]byte("Welcome back."))
+		cookies := req.Cookies()
+
+		var stateCookieVal string
+		for _, cookie := range cookies {
+			if cookie.Name == StateCookieName {
+				stateCookieVal = cookie.Value
+			}
+		}		
+		code := req.URL.Query().Get("code")
+		stateInUrl := req.URL.Query().Get("state")
+
+		if(stateInUrl == stateCookieVal) {
+			token, err := oauth2Conf.Exchange(oauth2.NoContext, code)
+			if err != nil {
+				w.Header().Add("Content-Type", "text/html")
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("<br/>Could not get access token from code, error: " + err.Error()))
+				return
+			}
+
+			w.Header().Add("Content-Type", "text/html")		
+			w.Write([]byte("Got access token from code= " + token.AccessToken))
+			w.Write([]byte("<br/>Got refresh token from code= " + token.RefreshToken))
+		} else {			
+			w.Header().Add("Content-Type", "text/html")		
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("<br/>OAuth2 state variables did not match."))
+		}
 		fmt.Println("Received callback.")
 	}
 	
