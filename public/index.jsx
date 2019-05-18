@@ -9,11 +9,15 @@ class App extends React.Component {
         <th>{g.title}</th><th><a href={g.url}>{g.url}</a></th>
       </tr>
     )}) : ""
-    
+
+    const login = this.props.loggedIn ?
+          (<span><a href="/api/gists/fetchAll">Fetch Gists</a> | <a href="/logout">Logout</a></span>)
+          : (<a href="/oauth/github">Login with Github</a>)
+
     return (
       <div className="gists">
         <div className="github-login">
-          <a href="/oauth/github">Login with Github</a>
+          {login}
         </div>
         <table className="table table-bordered">
           <thead><tr><td>Name of Gist</td><td>Link</td></tr></thead>
@@ -25,5 +29,5 @@ class App extends React.Component {
 }
 
 $(() => {
-  ReactDOM.render(<App/>, document.getElementById('app-root'))
+  ReactDOM.render(<App loggedIn={loggedIn}/>, document.getElementById('app-root'))
 })

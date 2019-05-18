@@ -109,10 +109,27 @@ func main() {
 	}
 	var sessionStore = sessions.NewCookieStore(keyBytes)
 	sessionName := "gscan8session"
+
+	logout := func(w http.ResponseWriter, req *http.Request) {
+ 		session, err := sessionStore.Get(req, sessionName)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		
+		delete(session.Values, "userId")
+		err = session.Save(req, w)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return			
+		}
+		
+		http.Redirect(w, req, "/", http.StatusFound)
+	}
 	
 	root := func(w http.ResponseWriter, req *http.Request) {
 
-		session, err := sessionStore.Get(req, sessionName)
+ 		session, err := sessionStore.Get(req, sessionName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -125,11 +142,13 @@ func main() {
 			return
 		}
 
-		ctx := map[string]template.HTML{}
+		ctx := make(map[string]interface{})
 		if !dbConn.NewRecord(user) {
 			ctx["username"] = template.HTML(user.Username)
+			ctx["loggedIn"] = true
 		} else {
 			ctx["username"] = template.HTML("(not logged in)")
+			ctx["loggedIn"] = false
 		}
 		
 		Render.Execute("index", ctx, req, w)
@@ -158,8 +177,26 @@ func main() {
 		Scopes:       []string{},
 		Endpoint: github.Endpoint,
 	}
-
 	StateCookieName := "OAuth2-Github-State"
+
+	// Append to responseBody
+	readResponseBody := func(responseBody []byte, body io.ReadCloser) error {
+		buf := make([]byte, 1024)
+		var n int
+		n, err = body.Read(buf)
+		responseBody = append(responseBody, buf[0:n]...)
+		for err == nil {
+			n, err = body.Read(buf)
+			responseBody = append(responseBody, buf[0:n]...)
+		}
+		
+		if err != io.EOF {
+			return err
+		}
+
+		return nil
+	}
+	
 	oauth2Github := func(w http.ResponseWriter, req *http.Request) {
 		stateStr, err := stateStr()
 		if err != nil {
@@ -267,11 +304,51 @@ func main() {
 			
 			session.Values["userId"] = userQueried.Id
 			session.Save(req, w)
+			if err != nil {
+				writeInteralServerError(err.Error())
+				return			
+			}
+			
 			http.Redirect(w, req, "/", http.StatusFound)
 		} else {
 			writeError("OAuth2 state variables did not match.", http.StatusBadRequest)
 		}
 		log.Println("Received callback.")
+	}
+
+	fetchAllGists := func(w http.ResponseWriter, req * http.Request) {
+		session, err := sessionStore.Get(req, sessionName)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		user := User{}
+		dbConn.Where("id = ?", session.Values["userId"]).First(&user)
+		if dbConn.Error != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		token := oauth2.Token{AccessToken: user.AccessToken}
+		client := oauth2Conf.Client(oauth2.NoContext, &token)
+		response, err := client.Get("https://api.github.com/users/" + user.Username + "/gists")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		responseBody := []byte{}
+		err = readResponseBody(responseBody, response.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		
+		
+		w.Header().Add("Content-Type", "text/html")
+		w.Write([]byte("I think this is the response body:"))
+		w.Write([]byte(responseBody))
 	}
 	
 	defaultHandler := func(w http.ResponseWriter, req *http.Request) {
@@ -284,9 +361,11 @@ func main() {
 
 	log.Println("Starting server...")
 	http.Handle("/", http.HandlerFunc(root))
+	http.Handle("/logout", http.HandlerFunc(logout))
 
 	http.Handle("/oauth/github", http.HandlerFunc(oauth2Github))
 	http.Handle("/oauth/github/callback", http.HandlerFunc(oauth2GithubCallback))
+	http.Handle("/api/gists/fetchAll", http.HandlerFunc(fetchAllGists))	
 	http.Handle("/api/gists/search", http.HandlerFunc(search))
   http.Handle("/index.jsx", http.HandlerFunc(defaultHandler))
 

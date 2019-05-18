@@ -37,7 +37,7 @@
     <div class="container main-cont">
       <div class="row">
         <div class="col">
-          <h3>GScan8 - Welcome {{ .username }}</h3>
+          <h3>GScan8 - Welcome</h3>
         </div>
       </div>
       
@@ -60,6 +60,10 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 
     <script type="text/babel" src="index.jsx" ></script>
-    
+
+    <script type="text/javascript" >
+       username = {{ .username }}
+       loggedIn = {{ .loggedIn }}
+    </script>
   </body>
 </html>
