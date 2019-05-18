@@ -15,7 +15,12 @@ tmp/*
 storage/*
 node_modules/*
 
+gscan8
+
+.envrc
+
+
 # emacs
 .emacs.desktop
+.emacs.desktop.lock
 
-gscan8

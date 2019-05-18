@@ -12,6 +12,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"github.com/qor/render"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/github"
 )
 
 type TempParams struct {
@@ -114,19 +116,35 @@ func main() {
 		return
 	}
 
-	oauthGithub := func(w http.ResponseWriter, req *http.Request) {
-		str, err := stateStr()
+	oauth2Conf := &oauth2.Config{
+		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
+		ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
+		Scopes:       []string{},
+		Endpoint: github.Endpoint,
+	}
+	
+	oauth2Github := func(w http.ResponseWriter, req *http.Request) {
+		stateStr, err := stateStr()
 		if err != nil {
 			log.Println("Unable to generate state string for oauth redirect.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		stateCookie := http.Cookie{Name: "OAuth2-Github-State", Value: str, MaxAge: 60 * 15}
+		stateCookie := http.Cookie{Name: "OAuth2-Github-State", Value: stateStr, MaxAge: 60 * 15}
 		http.SetCookie(w, &stateCookie)
 
 		w.Header().Add("Content-Type", "text/html")
-		w.Write([]byte("Redirecting."))
+
+		url := oauth2Conf.AuthCodeURL(stateStr, oauth2.AccessTypeOffline)
+		fmt.Println("Redirecting to ", url)
+		http.Redirect(w, req, url, 302)
+	}
+
+  oauth2GithubCallback := func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Add("Content-Type", "text/html")		
+		w.Write([]byte("Welcome back."))
+		fmt.Println("Received callback.")
 	}
 	
 	defaultHandler := func(w http.ResponseWriter, req *http.Request) {
@@ -140,11 +158,10 @@ func main() {
 	fmt.Println("Starting server...")
 	http.Handle("/", http.HandlerFunc(root))
 
-	http.Handle("/oauth/github", http.HandlerFunc(oauthGithub))
-	
+	http.Handle("/oauth/github", http.HandlerFunc(oauth2Github))
+	http.Handle("/oauth/github/callback", http.HandlerFunc(oauth2GithubCallback))
 	http.Handle("/api/gists/search", http.HandlerFunc(search))
-
-	http.Handle("/index.jsx", http.HandlerFunc(defaultHandler))
+  http.Handle("/index.jsx", http.HandlerFunc(defaultHandler))
 
 	err = http.ListenAndServe(addr, nil)
 	if err != nil {

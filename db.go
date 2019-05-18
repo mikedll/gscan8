@@ -11,6 +11,12 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type User struct {
+	Id        int64   `gorm:"PRIMARY_KEY;AUTO_INCREMENT"`
+	Username  string  `gorm:"not null"`
+	Token     string
+}
+
 type GistFile struct {
 	Id       int64  `json:"id"        gorm:"PRIMARY_KEY;AUTO_INCREMENT"`
 	VendorId string `json:"vendor_id" gorm:"not null"`
@@ -121,6 +127,7 @@ func getGistFiles() (results []GistFile) {
 }
 
 func makeSchema() error {
+	dbConn.AutoMigrate(&User{})
 	dbConn.AutoMigrate(&GistFile{})
 
 	return nil
