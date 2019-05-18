@@ -8,7 +8,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-
+	"crypto/rand"
+	"encoding/base64"
+	"errors"
 	"github.com/qor/render"
 )
 
@@ -19,6 +21,16 @@ type TempParams struct {
 var sBootstrap template.HTML
 
 var isProduction bool
+
+func stateStr() (string, error) {
+	c := 30
+	b := make([]byte, c)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", errors.New("couldn't make random str: " + err.Error())
+	}
+	return base64.StdEncoding.EncodeToString(b), nil
+}
 
 func main() {
 	isProduction = false
@@ -102,6 +114,21 @@ func main() {
 		return
 	}
 
+	oauthGithub := func(w http.ResponseWriter, req *http.Request) {
+		str, err := stateStr()
+		if err != nil {
+			log.Println("Unable to generate state string for oauth redirect.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		stateCookie := http.Cookie{Name: "OAuth2-Github-State", Value: str, MaxAge: 60 * 15}
+		http.SetCookie(w, &stateCookie)
+
+		w.Header().Add("Content-Type", "text/html")
+		w.Write([]byte("Redirecting."))
+	}
+	
 	defaultHandler := func(w http.ResponseWriter, req *http.Request) {
 		file := "index.jsx"
 		err := sendFile(file, w)
@@ -113,6 +140,8 @@ func main() {
 	fmt.Println("Starting server...")
 	http.Handle("/", http.HandlerFunc(root))
 
+	http.Handle("/oauth/github", http.HandlerFunc(oauthGithub))
+	
 	http.Handle("/api/gists/search", http.HandlerFunc(search))
 
 	http.Handle("/index.jsx", http.HandlerFunc(defaultHandler))

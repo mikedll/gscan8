@@ -11,7 +11,15 @@ class App extends React.Component {
     )})
     
     return (
-      <div className="gists"><table className="table table-bordered"><thead><tr><td>Name of Gist</td><td>Link</td></tr></thead><tbody>{gists}</tbody></table></div>
+      <div className="gists">
+        <div className="github-login">
+          <a href="/oauth/github">Login with Github</a>
+        </div>
+        <table className="table table-bordered">
+          <thead><tr><td>Name of Gist</td><td>Link</td></tr></thead>
+          <tbody>{gists}</tbody>
+        </table>
+      </div>
     )
   }
 }
