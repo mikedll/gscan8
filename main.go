@@ -181,15 +181,20 @@ func main() {
 			}
 
 			// UserApiResponse
-			maxSize := 1024 * 50
-			buf := make([]byte, maxSize)
+			responseBody := []byte{}
+			buf := make([]byte, 1024)			
 			var n int
 			n, err = response.Body.Read(buf)
+			responseBody = append(responseBody, buf[0:n]...)
+			for err == nil {
+				n, err = response.Body.Read(buf)
+				responseBody = append(responseBody, buf[0:n]...)
+			}
+			
 			if err != io.EOF {
 				writeError("Unable to read response from Github.")
 				return
 			}
-			responseBody := buf[0:n]
 
 			userApiResponse := UserApiResponse{}
 			json.Unmarshal(responseBody, &userApiResponse)
