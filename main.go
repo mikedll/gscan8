@@ -180,7 +180,8 @@ func main() {
 	StateCookieName := "OAuth2-Github-State"
 
 	// Append to responseBody
-	readResponseBody := func(responseBody []byte, body io.ReadCloser) error {
+	readResponseBody := func(body io.ReadCloser) ([]byte, error) {
+		responseBody := []byte{}
 		buf := make([]byte, 1024)
 		var n int
 		n, err = body.Read(buf)
@@ -191,10 +192,10 @@ func main() {
 		}
 		
 		if err != io.EOF {
-			return err
+			return nil, err
 		}
 
-		return nil
+		return responseBody, nil 
 	}
 	
 	oauth2Github := func(w http.ResponseWriter, req *http.Request) {
@@ -253,18 +254,11 @@ func main() {
 			}
 
 			// UserApiResponse
-			responseBody := []byte{}
-			buf := make([]byte, 1024)			
-			var n int
-			n, err = response.Body.Read(buf)
-			responseBody = append(responseBody, buf[0:n]...)
-			for err == nil {
-				n, err = response.Body.Read(buf)
-				responseBody = append(responseBody, buf[0:n]...)
-			}
+			var responseBody []byte
+			responseBody, err = readResponseBody(response.Body)
 			
-			if err != io.EOF {
-				writeInteralServerError("Unable to read response from Github.")
+			if err != nil {
+				writeInteralServerError(err.Error())
 				return
 			}
 
@@ -308,7 +302,7 @@ func main() {
 				writeInteralServerError(err.Error())
 				return			
 			}
-			
+
 			http.Redirect(w, req, "/", http.StatusFound)
 		} else {
 			writeError("OAuth2 state variables did not match.", http.StatusBadRequest)
@@ -338,8 +332,8 @@ func main() {
 			return
 		}
 
-		responseBody := []byte{}
-		err = readResponseBody(responseBody, response.Body)
+		var responseBody []byte
+		responseBody, err = readResponseBody(response.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

@@ -11,7 +11,7 @@ class App extends React.Component {
     )}) : ""
 
     const login = this.props.loggedIn ?
-          (<span><a href="/api/gists/fetchAll">Fetch Gists</a> | <a href="/logout">Logout</a></span>)
+          (<span><a href="/api/gists/fetchAll">Fetch Gists</a> | {this.props.username} <a href="/logout">Logout</a></span>)
           : (<a href="/oauth/github">Login with Github</a>)
 
     return (
@@ -29,5 +29,5 @@ class App extends React.Component {
 }
 
 $(() => {
-  ReactDOM.render(<App loggedIn={loggedIn}/>, document.getElementById('app-root'))
+  ReactDOM.render(<App username={username} loggedIn={loggedIn}/>, document.getElementById('app-root'))
 })
