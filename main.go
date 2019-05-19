@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"io"
+	"io/ioutil"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
@@ -21,6 +22,18 @@ import (
 
 type UserApiResponse struct {
 	Login       string  `json:"login"`
+}
+
+type FileApiResponse struct {
+	Filename   string `json:"filename"`
+	Language   string `json:"langauge"`
+	RawUrl     string `json:"raw_url"`
+}
+
+type GistApiResponse struct {
+	Id     string                     `json:"id"`
+	Title  string                     `json:"description"`
+	Files  map[string]FileApiResponse `json:"files"`
 }
 
 var isProduction bool
@@ -62,13 +75,6 @@ func main() {
 			}
 
 			log.Println("created schema.")
-		} else if flag.Arg(0) == "sample" {
-			err := makeGistFiles()
-			if err != nil {
-				log.Println("failed to make sample gists", err)
-				return
-			}
-			log.Println("sample gists created.")
 		} else if flag.Arg(0) == "empty" {
 			err := emptyDb()
 			if err != nil {
@@ -343,11 +349,76 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		
-		
+
+		gistsResponse := []GistApiResponse{}
+		json.Unmarshal(responseBody, &gistsResponse)
+
+		// For every file in every gist
+		for _, gist := range gistsResponse {
+			fmt.Println("Id == ", gist.Id)
+			
+			for _, fileInfo := range gist.Files {
+				fmt.Println("Filename == ?", fileInfo.Filename)
+				fmt.Println("Language == ?", fileInfo.Language)
+				fmt.Println("RawUrl == ?", fileInfo.RawUrl)
+				
+				newGist := GistFile{
+					UserId: user.Id,
+					VendorId: gist.Id,
+					Title: gist.Title,
+					Filename: fileInfo.Filename,
+					Language: fileInfo.Language,
+				}
+
+				response, err = http.Get(fileInfo.RawUrl)
+				if err != nil {
+					log.Println("Unable to fetch url " + fileInfo.RawUrl)
+					continue
+				}
+
+				var bodyBytes []byte
+				bodyBytes, err = ioutil.ReadAll(response.Body)
+				if err != nil {
+					log.Println("Unable to read response from url: " + fileInfo.RawUrl)
+					continue
+				}
+
+				existingGist := GistFile{}
+				
+				gistQuery := GistFile{
+					UserId: newGist.UserId,
+					VendorId: newGist.VendorId,
+					Filename: newGist.Filename,
+				}
+
+				dbConn.Where(&gistQuery).First(&existingGist)
+
+				if dbConn.NewRecord(existingGist) {
+					newGist.Body = string(bodyBytes)
+					dbConn.Create(&newGist)
+					if err = dbConn.Error; err != nil {
+						log.Println("Unable to create gist file: " + newGist.VendorId + "/" + newGist.Filename)
+					}
+				} else {
+					existingGist.Title = newGist.Title
+					existingGist.Body = string(bodyBytes)
+					existingGist.Language = newGist.Language
+					dbConn.Save(&newGist)
+					if err = dbConn.Error; err != nil {
+						log.Println("Unable to save gist file: " + newGist.VendorId + "/" + newGist.Filename)
+					}					
+				}
+				
+			}
+		}
 		w.Header().Add("Content-Type", "text/html")
-		w.Write([]byte("I think this is the response body:"))
-		w.Write([]byte(responseBody))
+		w.Write([]byte("I think I found a response"))
+		// w.Write([]byte(responseBody))
+	}
+
+	getGists := func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Add("Content-Type", "text/html")
+		w.Write([]byte("Nothing to report"))
 	}
 	
 	defaultHandler := func(w http.ResponseWriter, req *http.Request) {
@@ -366,6 +437,7 @@ func main() {
 	http.Handle("/oauth/github/callback", http.HandlerFunc(oauth2GithubCallback))
 	http.Handle("/api/gists/fetchAll", http.HandlerFunc(fetchAllGists))	
 	http.Handle("/api/gists/search", http.HandlerFunc(search))
+	http.Handle("/api/gists", http.HandlerFunc(getGists))	
   http.Handle("/index.jsx", http.HandlerFunc(defaultHandler))
 
 	err = http.ListenAndServe(addr, nil)

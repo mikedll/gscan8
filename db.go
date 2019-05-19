@@ -2,9 +2,7 @@ package main
 
 import (
 	"errors"
-	"io/ioutil"
 	"log"
-	"strconv"
 	"time"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -20,6 +18,7 @@ type User struct {
 
 type GistFile struct {
 	Id       int64  `json:"id"        gorm:"PRIMARY_KEY;AUTO_INCREMENT"`
+	UserId   int64  `                 gorm:"not null"`
 	VendorId string `json:"vendor_id" gorm:"not null"`
 	Title    string `json:"title"     gorm:"default '';not null"`
 	Filename string `json:"filename"  gorm:"not null"`
@@ -52,28 +51,6 @@ func closeDbForProject() {
 	dbConn.Close()
 }
 
-// remoteGists returns fake data for seeding into a database.
-func mockGistFiles() ([]GistFile, error) {
-	fetched := []GistFile{
-		GistFile{1, "8eaa6df25ac7a10ae3ded33e7f00b306", "purchase_orders.html", "DbWrapper.cs", "", "CSharp"},
-		GistFile{2, "7051b354ac1f5705587386a4cf07efe8", "pos.sql", "pos.sql", "", "SQL"},
-	}
-
-	var err error
-	var bytes []byte
-	for i, gistFile := range fetched {
-		filePath := "mockdata/" + strconv.FormatInt(gistFile.Id, 10) + ".txt"
-		bytes, err = ioutil.ReadFile(filePath)
-		if err != nil {
-			return []GistFile{}, err
-		}
-
-		fetched[i].Body = string(bytes)
-	}
-
-	return fetched, nil
-}
-
 func findUserByLogin(login string, user *User) error {
 	dbConn.Where("username = ?", login).First(user)
 	if err := dbConn.Error; err != nil {
@@ -93,24 +70,6 @@ func searchGistFiles(query string) (results []Snippet) {
 
 	// assemble snippets with languages
 	return
-}
-
-//
-// Seeds db with some fake data.
-//
-func makeGistFiles() error {
-	fetched, err := mockGistFiles()
-	if err != nil {
-		return errors.New("error while retrieving mock gist files")
-	}
-	for _, gistFile := range fetched {
-		dbConn.Create(&gistFile)
-		if err := dbConn.Error; err != nil {
-			return errors.New("insert failed")
-		}
-	}
-
-	return nil
 }
 
 //
