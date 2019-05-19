@@ -94,13 +94,6 @@ func main() {
 		return
 	}
 
-	gists := getGistFiles()
-	_, err := json.Marshal(gists)
-	if err != nil {
-		log.Println("unable to find gists: ", err)
-		_ = []byte{}
-	}
-
 	Render := render.New(&render.Config{
 		ViewPaths:     []string{},
 		DefaultLayout: "",
@@ -308,6 +301,11 @@ func main() {
 			return
 		}
 
+		if _, ok := session.Values["userId"]; !ok {
+			http.Error(w, "", http.StatusForbidden)
+			return
+		}
+		
 		user := User{}
 		dbConn.Where("id = ?", session.Values["userId"]).First(&user)
 		if dbConn.Error != nil {
@@ -392,8 +390,33 @@ func main() {
 	}
 
 	getGists := func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Add("Content-Type", "text/html")
-		w.Write([]byte("Nothing to report"))
+		session, err := sessionStore.Get(req, sessionName)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if _, ok := session.Values["userId"]; !ok {
+			http.Error(w, "", http.StatusForbidden)
+			return
+		}
+		
+		gistFiles := []GistFile{}
+		dbConn.Where(GistFile{UserId: session.Values["userId"].(int64)}).Find(&gistFiles)
+		if dbConn.Error != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		var gistFilesJson []byte
+		gistFilesJson, err = json.Marshal(gistFiles)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(gistFilesJson)
 	}
 	
 	defaultHandler := func(w http.ResponseWriter, req *http.Request) {
@@ -415,7 +438,7 @@ func main() {
 	http.Handle("/api/gists", http.HandlerFunc(getGists))	
   http.Handle("/index.jsx", http.HandlerFunc(defaultHandler))
 
-	err = http.ListenAndServe(addr, nil)
+	err := http.ListenAndServe(addr, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}

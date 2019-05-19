@@ -85,14 +85,6 @@ func emptyDb() error {
 	return err
 }
 
-func getGistFiles() (results []GistFile) {
-	if err := dbConn.Find(&results).Error; err != nil {
-		log.Fatal(err)
-	}
-
-	return
-}
-
 func makeSchema() error {
 	dbConn.AutoMigrate(&User{})
 	dbConn.AutoMigrate(&GistFile{})
