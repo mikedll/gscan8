@@ -1,0 +1,3 @@
+export GITHUB_CLIENT_ID=something
+export GITHUB_CLIENT_SECRET=somethingelse
+export SESSION_KEY="longstringfromkeygen"

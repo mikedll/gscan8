@@ -1,0 +1,59 @@
+
+-- This is to use as a reference for creating PostgreSQL tables.
+-- It comes from a Rails database, so these statements are from
+-- activerecord's idea of how to map Decimal, Datetime, and string
+-- fields to SQL data types. The version of activerecord used was 5.2.x.
+
+-- The live application from which this code came is at
+-- https://pinvvue.herokuapp.com/
+-- The app code for it is at
+-- https://github.com/mikedll/PInvVue
+
+
+DROP TABLE IF EXISTS "customers" CASCADE;
+CREATE TABLE "customers" (
+       "id" bigserial primary key,
+       "first_name" character varying DEFAULT '' NOT NULL,
+       "middle_initial" character varying DEFAULT '' NOT NULL,
+       "last_name" character varying DEFAULT '' NOT NULL,
+       "address1" character varying DEFAULT '' NOT NULL,
+       "city" character varying DEFAULT '' NOT NULL,
+       "state" character varying DEFAULT '' NOT NULL,
+       "zip_code" character varying DEFAULT '' NOT NULL,
+       "created_at" timestamp NOT NULL,
+       "updated_at" timestamp NOT NULL
+       );
+       
+DROP TABLE IF EXISTS "items" CASCADE;
+CREATE TABLE "items" (
+       "id" bigserial primary key,
+       "name" character varying DEFAULT '' NOT NULL,
+       "unit_price" decimal(8,2) DEFAULT '0.0' NOT NULL,
+       "created_at" timestamp NOT NULL,
+       "updated_at" timestamp NOT NULL
+       );
+       
+DROP TABLE IF EXISTS "line_items" CASCADE;
+CREATE TABLE "line_items" (
+       "id" bigserial primary key,
+       "added_at" timestamp NOT NULL,
+       "price" decimal(8,2) DEFAULT '0.0' NOT NULL,
+       "created_at" timestamp NOT NULL,
+       "updated_at" timestamp NOT NULL,
+       "purchase_order_id" integer,
+       "item_id" integer,
+       "quantity" decimal(8,2),
+       "unit_price" decimal(8,2) DEFAULT '0.0'
+       );
+
+
+DROP TABLE IF EXISTS "purchase_orders" CASCADE;
+CREATE TABLE "purchase_orders" (
+       "id" bigserial primary key,
+       "title" character varying,
+       "date" timestamp,
+       "total" decimal(8,2) DEFAULT '0.0' NOT NULL,
+       "created_at" timestamp NOT NULL,
+       "updated_at" timestamp NOT NULL,
+       "customer_id" integer
+);

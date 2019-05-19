@@ -1,95 +1,98 @@
 package main
 
 import (
-	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
-	"log"
+	"errors"
 	"os"
+	"log"
+	"time"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
+	_ "github.com/lib/pq"
 )
 
-type Gist struct {
-  Id int        `json:"id"`
-	Title string  `json:"title"`
-	Url string   `json:"url"`
+type User struct {
+	Id           int64      `gorm:"PRIMARY_KEY;AUTO_INCREMENT"`
+	Username     string     `gorm:"not null;unique_index"`
+	AccessToken  string     `gorm:"not null"`
+	TokenExpiry  time.Time
 }
 
-const dbPath string = "./storage/db.sqlite3"
-
-// remoteGists returns fake data for seeding into a database.
-func remoteGists() []Gist {
-	fetched := []Gist{
-		Gist{1, "purchase_orders.html", "https://gist.github.com/mikedll/8eaa6df25ac7a10ae3ded33e7f00b306"},
-		Gist{2, "gist:8ea5f31a1269ed482f3ad0f7b274ee05", "https://gist.github.com/mikedll/8ea5f31a1269ed482f3ad0f7b274ee05"},
-	}
-
-	return fetched
+type GistFile struct {
+	Id       int64  `json:"id"        gorm:"PRIMARY_KEY;AUTO_INCREMENT"`
+	UserId   int64  `                 gorm:"not null"`
+	VendorId string `json:"vendor_id" gorm:"not null"`
+	Title    string `json:"title"     gorm:"default '';not null"`
+	Filename string `json:"filename"  gorm:"not null"`
+	Body     string `json:"body"      gorm:"type:character varying;default:''"`
+	Language string `json:"language"  gorm:"not null"`
 }
 
-func getGists() (collected []Gist) {
-	db, err := sql.Open("sqlite3", dbPath)
+type Snippet struct {
+	Id       int64  `json:"id"`
+	Title    int    `json:"title"`
+	Body     string `json:"body"`
+	Language string `json:"language"`
+}
+
+var dbConn *gorm.DB
+
+func openDbForProject(isProduction bool) {
+	var err error
+	var connString string
+	
+	if isProduction {
+		connString = os.Getenv("DATABASE_URL")
+	} else {
+		connString = "host=localhost user=gscan8dev dbname=gscan8development password=thintent"
+		connString = connString + " sslmode=disable"
+	}
+	dbConn, err = gorm.Open("postgres", connString)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+}
 
-	rows, err := db.Query("SELECT id, title, url FROM gists")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
+func closeDbForProject() {
+	dbConn.Close()
+}
 
-	for rows.Next() {
-		var cur Gist
-		err = rows.Scan(&cur.Id, &cur.Title, &cur.Url)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		collected = append(collected, cur)
-	}
-	err = rows.Err()
-	if err != nil {
-		log.Fatal(err)
+func findUserByLogin(login string, user *User) error {
+	dbConn.Where("username = ?", login).First(user)
+	if err := dbConn.Error; err != nil {
+		return errors.New("createUser failed")
 	}
 
+	return nil
+}
+
+func searchGistFiles(query string) (results []Snippet) {
+	results = []Snippet{}
+	// search db, get back bodies
+
+	// search again, get indices.
+
+	// search backward/forward to discover nearby lines.
+
+	// assemble snippets with languages
 	return
 }
 
-func makeGists() {
-	os.Remove(dbPath)
-
-	db, err := sql.Open("sqlite3", dbPath)
+//
+// Deletes all data in db.
+//
+func emptyDb() error {
+	dbConn.Delete(GistFile{})
+	err := dbConn.Error
 	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	sqlStmt := `
-	CREATE TABLE gists (id INTEGER NOT NULL PRIMARY KEY, title TEXT, url TEXT);
-	DELETE FROM gists;
-	`
-	_, err = db.Exec(sqlStmt)
-	if err != nil {
-		log.Printf("%q: %s\n", err, sqlStmt)
-		return
+		return errors.New("Error while deleting db data.")
 	}
 
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatal(err)
-	}
-	stmt, err := tx.Prepare("INSERT INTO gists (id, title, url) VALUES(?, ?, ?)")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
+	return err
+}
 
-	fetched := remoteGists()
-	for _, f := range fetched {
-		_, err = stmt.Exec(f.Id, f.Title, f.Url)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	tx.Commit()
+func makeSchema() error {
+	dbConn.AutoMigrate(&User{})
+	dbConn.AutoMigrate(&GistFile{})
+
+	return nil
 }
