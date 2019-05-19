@@ -277,6 +277,11 @@ func main() {
 			
 			if(dbConn.NewRecord(userQueried)) {
 				userQueried.Username = userApiResponse.Login
+
+				if userQueried.Username == "" {
+					writeError("Got empty username", http.StatusBadRequest)
+					return
+				}
 				
 				dbConn.Create(&userQueried)
 				if err = dbConn.Error; err != nil {
