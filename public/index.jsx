@@ -59,7 +59,7 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    if(!this.state.gists) {
+    if(!this.state.gists && this.props.loggedIn) {
       new AjaxAssistant($).get('/api/gists')
         .then(gists => this.setState({gists: gists}))
     }
