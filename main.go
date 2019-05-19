@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"io"
 	"io/ioutil"
 	"crypto/rand"
 	"encoding/base64"
@@ -184,25 +183,6 @@ func main() {
 		Endpoint: github.Endpoint,
 	}
 	StateCookieName := "OAuth2-Github-State"
-
-	// Append to responseBody
-	readResponseBody := func(body io.ReadCloser) ([]byte, error) {
-		responseBody := []byte{}
-		buf := make([]byte, 1024)
-		var n int
-		n, err = body.Read(buf)
-		responseBody = append(responseBody, buf[0:n]...)
-		for err == nil {
-			n, err = body.Read(buf)
-			responseBody = append(responseBody, buf[0:n]...)
-		}
-		
-		if err != io.EOF {
-			return nil, err
-		}
-
-		return responseBody, nil 
-	}
 	
 	oauth2Github := func(w http.ResponseWriter, req *http.Request) {
 		stateStr, err := stateStr()
@@ -261,7 +241,7 @@ func main() {
 
 			// UserApiResponse
 			var responseBody []byte
-			responseBody, err = readResponseBody(response.Body)
+			responseBody, err = ioutil.ReadAll(response.Body)
 			
 			if err != nil {
 				writeInteralServerError(err.Error())
@@ -344,7 +324,7 @@ func main() {
 		}
 
 		var responseBody []byte
-		responseBody, err = readResponseBody(response.Body)
+		responseBody, err = ioutil.ReadAll(response.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -355,12 +335,7 @@ func main() {
 
 		// For every file in every gist
 		for _, gist := range gistsResponse {
-			fmt.Println("Id == ", gist.Id)
-			
 			for _, fileInfo := range gist.Files {
-				fmt.Println("Filename == ?", fileInfo.Filename)
-				fmt.Println("Language == ?", fileInfo.Language)
-				fmt.Println("RawUrl == ?", fileInfo.RawUrl)
 				
 				newGist := GistFile{
 					UserId: user.Id,
