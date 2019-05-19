@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"os"
 	"log"
 	"time"
 	"github.com/jinzhu/gorm"
@@ -37,8 +38,12 @@ var dbConn *gorm.DB
 
 func openDbForProject(isProduction bool) {
 	var err error
-	connString := "host=localhost user=gscan8dev dbname=gscan8development password=thintent"
-	if !isProduction {
+	var connString string
+	
+	if isProduction {
+		connString = os.Getenv("DATABASE_URL")
+	} else {
+		connString = "host=localhost user=gscan8dev dbname=gscan8development password=thintent"
 		connString = connString + " sslmode=disable"
 	}
 	dbConn, err = gorm.Open("postgres", connString)
