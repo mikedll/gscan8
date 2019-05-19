@@ -378,7 +378,7 @@ func main() {
 					existingGist.Title = newGist.Title
 					existingGist.Body = string(bodyBytes)
 					existingGist.Language = newGist.Language
-					dbConn.Save(&newGist)
+					dbConn.Save(&existingGist)
 					if err = dbConn.Error; err != nil {
 						log.Println("Unable to save gist file: " + newGist.VendorId + "/" + newGist.Filename)
 					}					
