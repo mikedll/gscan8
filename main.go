@@ -25,7 +25,7 @@ type UserApiResponse struct {
 
 type FileApiResponse struct {
 	Filename   string `json:"filename"`
-	Language   string `json:"langauge"`
+	Language   string `json:"language"`
 	RawUrl     string `json:"raw_url"`
 }
 
@@ -358,7 +358,7 @@ func main() {
 					continue
 				}
 
-				existingGist := GistFile{}
+				existingGistFile := GistFile{}
 				
 				gistQuery := GistFile{
 					UserId: newGist.UserId,
@@ -366,19 +366,19 @@ func main() {
 					Filename: newGist.Filename,
 				}
 
-				dbConn.Where(&gistQuery).First(&existingGist)
+				dbConn.Where(&gistQuery).First(&existingGistFile)
 
-				if dbConn.NewRecord(existingGist) {
+				if dbConn.NewRecord(existingGistFile) {
 					newGist.Body = string(bodyBytes)
 					dbConn.Create(&newGist)
 					if err = dbConn.Error; err != nil {
 						log.Println("Unable to create gist file: " + newGist.VendorId + "/" + newGist.Filename)
 					}
 				} else {
-					existingGist.Title = newGist.Title
-					existingGist.Body = string(bodyBytes)
-					existingGist.Language = newGist.Language
-					dbConn.Save(&existingGist)
+					existingGistFile.Title = newGist.Title
+					existingGistFile.Body = string(bodyBytes)
+					existingGistFile.Language = newGist.Language
+					dbConn.Save(&existingGistFile)
 					if err = dbConn.Error; err != nil {
 						log.Println("Unable to save gist file: " + newGist.VendorId + "/" + newGist.Filename)
 					}					
