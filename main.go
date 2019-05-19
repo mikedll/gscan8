@@ -389,6 +389,14 @@ func main() {
 		// w.Write([]byte(responseBody))
 	}
 
+	type GistFileLight struct {
+		Id       int64  `json:"id"        `
+		VendorId string `json:"vendor_id" `
+		Title    string `json:"title"     `
+		Filename string `json:"filename"  `
+		Language string `json:"language"  `	
+	}
+	
 	getGists := func(w http.ResponseWriter, req *http.Request) {
 		session, err := sessionStore.Get(req, sessionName)
 		if err != nil {
@@ -408,8 +416,19 @@ func main() {
 			return
 		}
 
+		lightGistFiles := []GistFileLight{}
+		for _, gistFile := range gistFiles {
+			lightGistFiles = append(lightGistFiles, GistFileLight{
+				Id: gistFile.Id,
+				VendorId: gistFile.VendorId,
+				Title: gistFile.Title,
+				Filename: gistFile.Filename,
+				Language: gistFile.Language,
+			})
+		}
+
 		var gistFilesJson []byte
-		gistFilesJson, err = json.Marshal(gistFiles)
+		gistFilesJson, err = json.Marshal(lightGistFiles)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
