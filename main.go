@@ -439,7 +439,7 @@ func main() {
 	}
 	
 	defaultHandler := func(w http.ResponseWriter, req *http.Request) {
-		file := "index.jsx"
+		file := "main.js"
 		err := sendFile(file, w)
 		if err != nil {
 			log.Println("Unable to serve static file: ", file)
@@ -455,7 +455,7 @@ func main() {
 	http.Handle("/api/gists/fetchAll", http.HandlerFunc(fetchAllGists))	
 	http.Handle("/api/gists/search", http.HandlerFunc(search))
 	http.Handle("/api/gists", http.HandlerFunc(getGists))	
-  http.Handle("/index.jsx", http.HandlerFunc(defaultHandler))
+  http.Handle("/main.js", http.HandlerFunc(defaultHandler))
 
 	err := http.ListenAndServe(addr, nil)
 	if err != nil {
