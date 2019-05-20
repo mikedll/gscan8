@@ -49,7 +49,16 @@ class App extends React.Component {
           (<span><a href="/api/gists/fetchAll">Fetch Gists</a> | {this.props.username} <a href="/logout">Logout</a></span>)
           : (<a href="/oauth/github">Login with Github</a>)
 
-    let coreContent = ""
+    let coreContent = "", searchForm = ""
+
+    if(this.props.loggedIn) {
+      searchForm = (
+          <form onSubmit={this.onSubmit}>
+            <input type="text" onChange={this.onChange} value={this.state.query} name="query" placeholder="Search"/>
+          </form>
+      )
+    }
+    
     if(this.state.results === null) {
       const gists = this.state.gists ? this.state.gists.map((g) => { return (
         <tr key={g.id}>
@@ -98,9 +107,7 @@ class App extends React.Component {
           {login}
         </div>
 
-        <form onSubmit={this.onSubmit}>
-          <input type="text" onChange={this.onChange} value={this.state.query} name="query" placeholder="Search"/>
-        </form>
+        {searchForm}
 
         {coreContent}
       </div>
