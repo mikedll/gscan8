@@ -1,67 +1,38 @@
 
 import React from 'react'
 import ReactDOM from 'react-dom'
-
-class AjaxAssistant {
-
-  constructor($) {
-    this.$ = $
-  }
-
-  handleError(xhr, reject) {
-    var text = ""
-    try {
-      const data = JSON.parse(xhr.responseText)
-      text = data.errors
-    } catch(e) {
-      text = xhr.responseText
-    }
-
-    if(text === "") {
-      if(xhr.status === 404) {
-        text = "A resource could not be found."
-      }
-    }
-    
-    reject(text)
-  }
-  
-  post(path, data) {
-    return new Promise((resolve, reject) => {
-      if(!data) data = {}
-      this.$.ajax({
-        method: 'POST',
-        url: path,
-        dataType: 'JSON',
-        data: data,
-        beforeSend: (xhr) => { xhr.setRequestHeader('CSRF-Token', this.$('meta[name=csrf-token]').attr('content')) },
-        success: (data) => resolve(data),
-        error: (xhr) => this.handleError(xhr, reject)
-      })
-    })
-  }
-  
-  get(path) {
-    return new Promise((resolve, reject) => {
-      this.$.ajax({
-        url: path,
-        dataType: 'JSON',
-        success: (data) => resolve(data),
-        error: (xhr) => this.handleError(xhr, reject)
-      })
-    })
-  }
-}
+import AjaxAssistant from 'AjaxAssistant.jsx'
 
 class App extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      gists: null
+      query: "",
+      gists: null,
+      results: null,
+      busy: false
     }
 
+    this.onSubmit = this.onSubmit.bind(this)
+    this.onChange = this.onChange.bind(this)
   }
 
+  onChange(e) {
+    const target = e.target
+    const name = target.name
+    this.setState({[name]: target.value})
+  }
+  
+  onSubmit(e) {
+    e.preventDefault()
+
+    if(this.state.busy) return
+    this.setState({busy: true})
+    
+    new AjaxAssistant($).get('/api/gists/search', {a: this.state.query})
+      .then(results => this.setState({busy: false, results: results}))
+  }
+  
   componentDidMount() {
     if(!this.state.gists && this.props.loggedIn) {
       new AjaxAssistant($).get('/api/gists')
@@ -74,25 +45,64 @@ class App extends React.Component {
   }
   
   render() {
-    const gists = this.state.gists ? this.state.gists.map((g) => { return (
-      <tr key={g.id}>
-        <td>{g.title}</td><td><a href={this.gistUrl(g)} target="_blank">{g.vendor_id}</a></td>
-      </tr>
-    )}) : ""
-
     const login = this.props.loggedIn ?
           (<span><a href="/api/gists/fetchAll">Fetch Gists</a> | {this.props.username} <a href="/logout">Logout</a></span>)
           : (<a href="/oauth/github">Login with Github</a>)
 
+    let coreContent = ""
+    if(this.state.results === null) {
+      const gists = this.state.gists ? this.state.gists.map((g) => { return (
+        <tr key={g.id}>
+          <td>{g.title}</td>
+          <td>{g.filename}</td>
+          <td><a href={this.gistUrl(g)} target="_blank">{g.vendor_id}</a></td>
+        </tr>
+      )}) : <tr><td colSpan="3"></td></tr>
+
+      const listAllGists = (
+        <table className="table table-bordered">
+          <thead><tr><th>Gist Description</th><th>Filename</th><th>ID / Link</th></tr></thead>
+          <tbody>
+            {gists}
+          </tbody>
+        </table>      
+      )
+
+      coreContent = listAllGists
+    } else {
+      const snippets = this.state.results.map((snippet, i) => { return (
+        <tr key={i}>
+          <td>
+            <code>{snippet.body}</code>
+          </td>
+          <td></td>
+          <td><a href={this.gistUrl(snippet)} target="_blank">{snippet.vendor_id}</a></td>
+        </tr>
+      )})
+            
+      const listResults = (
+        <table className="table table-bordered">
+          <thead><tr><th>Snippet</th><th>ID / Link</th></tr></thead>
+          <tbody>
+            {snippets}
+          </tbody>
+        </table>      
+      )
+      
+      coreContent = listResults
+    }
+    
     return (
       <div className="gists">
         <div className="github-login">
           {login}
         </div>
-        <table className="table table-bordered">
-          <thead><tr><td>Name of Gist</td><td>Link</td></tr></thead>
-          <tbody>{gists}</tbody>
-        </table>
+
+        <form onSubmit={this.onSubmit}>
+          <input type="text" onChange={this.onChange} value={this.state.query} name="query" placeholder="Search"/>
+        </form>
+
+        {coreContent}
       </div>
     )
   }

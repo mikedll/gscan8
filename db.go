@@ -28,10 +28,13 @@ type GistFile struct {
 }
 
 type Snippet struct {
-	Id       int64  `json:"id"`
-	Title    int    `json:"title"`
-	Body     string `json:"body"`
-	Language string `json:"language"`
+	Id         int64  `json:"id"`
+	Filename   int    `json:"filename"`
+	VendorId   int    `json:"vendor_id"`
+	LineNumber int    `json:"line_number"`
+	Title      int    `json:"title"`
+	Body       string `json:"body"`
+	Language   string `json:"language"`
 }
 
 var dbConn *gorm.DB
