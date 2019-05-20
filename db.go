@@ -69,12 +69,12 @@ func findUserByLogin(login string, user *User) error {
 	return nil
 }
 
-func searchGistFiles(query string) (results []Snippet, err error) {
+func searchGistFiles(userId int64, query string) (results []Snippet, err error) {
 	results = []Snippet{}
 	err = nil
 
 	gistFiles := []GistFile{}
-	dbConn.Where("body like ?", "%" + query + "%").Find(&gistFiles)
+	dbConn.Where("user_id = ? AND body like ?", userId, "%" + query + "%").Find(&gistFiles)
 
 	if err = dbConn.Error; err != nil {
 		return

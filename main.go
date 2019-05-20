@@ -153,8 +153,20 @@ func main() {
 	}
 
 	search := func(w http.ResponseWriter, req *http.Request) {
+		session, err := sessionStore.Get(req, sessionName)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if _, ok := session.Values["userId"]; !ok {
+			http.Error(w, "", http.StatusForbidden)
+			return
+		}
+
+		
 		// search db for json
-		snippets, err := searchGistFiles(req.URL.Query().Get("q"))
+		snippets, err := searchGistFiles(session.Values["userId"].(int64), req.URL.Query().Get("q"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
