@@ -29,7 +29,7 @@ class App extends React.Component {
     if(this.state.busy) return
     this.setState({busy: true})
     
-    new AjaxAssistant($).get('/api/gists/search', {a: this.state.query})
+    new AjaxAssistant($).get('/api/gists/search', {q: this.state.query})
       .then(results => this.setState({busy: false, results: results}))
   }
   

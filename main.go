@@ -154,13 +154,15 @@ func main() {
 
 	search := func(w http.ResponseWriter, req *http.Request) {
 		// search db for json
-		snippets := searchGistFiles(req.URL.Query().Get("q"))
+		snippets, err := searchGistFiles(req.URL.Query().Get("q"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		
 		snippetsJson, err := json.Marshal(snippets)
 		if err != nil {
-			log.Println("error while marshalling snippets: ", err)
-			snippetsJson = []byte{}
-			// StatusInternalServerError
-			// write "Error while marshalling snippets.
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
