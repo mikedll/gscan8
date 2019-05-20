@@ -75,14 +75,14 @@ class App extends React.Component {
           <td>
             <code>{snippet.body}</code>
           </td>
-          <td></td>
+          <td>{snippet.filename}</td>
           <td><a href={this.gistUrl(snippet)} target="_blank">{snippet.vendor_id}</a></td>
         </tr>
       )})
             
       const listResults = (
         <table className="table table-bordered">
-          <thead><tr><th>Snippet</th><th>ID / Link</th></tr></thead>
+          <thead><tr><th>Snippet</th><th>Filename</th><th>ID / Link</th></tr></thead>
           <tbody>
             {snippets}
           </tbody>

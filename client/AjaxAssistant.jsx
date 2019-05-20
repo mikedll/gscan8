@@ -48,8 +48,9 @@ export default class AjaxAssistant {
       }
 
       if(data) {
-        ajaxParams[data] = data
+        ajaxParams['data'] = data
       }
+      console.log(ajaxParams)
       
       this.$.ajax(ajaxParams)
     })

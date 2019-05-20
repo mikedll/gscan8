@@ -74,7 +74,7 @@ func searchGistFiles(query string) (results []Snippet, err error) {
 	err = nil
 
 	gistFiles := []GistFile{}
-	dbConn.Debug().Where("body like %?%", query).Find(&gistFiles)
+	dbConn.Where("body like ?", "%" + query + "%").Find(&gistFiles)
 
 	if err = dbConn.Error; err != nil {
 		return
@@ -88,7 +88,7 @@ func searchGistFiles(query string) (results []Snippet, err error) {
 	}
 	
 	for _, gistFile := range gistFiles {
-		matches := queryRegex.FindAllStringIndex(gistFile.Body, 0)
+		matches := queryRegex.FindAllStringIndex(gistFile.Body, -1)
 		for _, match := range matches {
 			min := match[0] - 100
 			max := match[1] + 100
