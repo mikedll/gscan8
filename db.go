@@ -5,6 +5,7 @@ import (
 	"os"
 	"log"
 	"time"
+	"regexp"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
@@ -28,10 +29,13 @@ type GistFile struct {
 }
 
 type Snippet struct {
-	Id       int64  `json:"id"`
-	Title    int    `json:"title"`
-	Body     string `json:"body"`
-	Language string `json:"language"`
+	GistFileId int64  `json:"id"`
+	VendorId   string `json:"vendor_id"`
+	Filename   string `json:"filename"`
+	LineNumber int    `json:"line_number"`
+	Title      string `json:"title"`
+	Body       string `json:"body"`
+	Language   string `json:"language"`
 }
 
 var dbConn *gorm.DB
@@ -65,15 +69,50 @@ func findUserByLogin(login string, user *User) error {
 	return nil
 }
 
-func searchGistFiles(query string) (results []Snippet) {
+func searchGistFiles(query string) (results []Snippet, err error) {
 	results = []Snippet{}
-	// search db, get back bodies
+	err = nil
 
-	// search again, get indices.
+	gistFiles := []GistFile{}
+	dbConn.Where("body like ?", "%" + query + "%").Find(&gistFiles)
 
-	// search backward/forward to discover nearby lines.
+	if err = dbConn.Error; err != nil {
+		return
+	}
 
-	// assemble snippets with languages
+	var queryRegex *regexp.Regexp
+	queryRegex, err = regexp.Compile(query) // TODO replace special characters
+	if err != nil {
+		err = errors.New("Unable to compile regular expression: " + err.Error())
+		return
+	}
+	
+	for _, gistFile := range gistFiles {
+		matches := queryRegex.FindAllStringIndex(gistFile.Body, -1)
+		for _, match := range matches {
+			min := match[0] - 100
+			max := match[1] + 100
+			if min < 0 {
+				min = 0
+			}
+			if max > len(gistFile.Body) {
+				max = len(gistFile.Body)
+			}
+
+			snippet := Snippet{
+				GistFileId: gistFile.Id,
+				VendorId: gistFile.VendorId,
+				Filename: gistFile.Filename,
+				LineNumber: 1, // TODO calculate line number
+				Title: gistFile.Title,
+				Body: gistFile.Body[min:max],
+				Language: gistFile.Language,
+			}
+
+			results = append(results, snippet)
+		}
+	}
+
 	return
 }
 

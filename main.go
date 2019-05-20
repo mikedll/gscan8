@@ -154,13 +154,15 @@ func main() {
 
 	search := func(w http.ResponseWriter, req *http.Request) {
 		// search db for json
-		snippets := searchGistFiles(req.URL.Query().Get("q"))
+		snippets, err := searchGistFiles(req.URL.Query().Get("q"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		
 		snippetsJson, err := json.Marshal(snippets)
 		if err != nil {
-			log.Println("error while marshalling snippets: ", err)
-			snippetsJson = []byte{}
-			// StatusInternalServerError
-			// write "Error while marshalling snippets.
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -439,7 +441,7 @@ func main() {
 	}
 	
 	defaultHandler := func(w http.ResponseWriter, req *http.Request) {
-		file := "index.jsx"
+		file := "main.js"
 		err := sendFile(file, w)
 		if err != nil {
 			log.Println("Unable to serve static file: ", file)
@@ -455,7 +457,7 @@ func main() {
 	http.Handle("/api/gists/fetchAll", http.HandlerFunc(fetchAllGists))	
 	http.Handle("/api/gists/search", http.HandlerFunc(search))
 	http.Handle("/api/gists", http.HandlerFunc(getGists))	
-  http.Handle("/index.jsx", http.HandlerFunc(defaultHandler))
+  http.Handle("/main.js", http.HandlerFunc(defaultHandler))
 
 	err := http.ListenAndServe(addr, nil)
 	if err != nil {
