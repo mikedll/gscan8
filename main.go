@@ -398,9 +398,10 @@ func main() {
 				
 			}
 		}
-		w.Header().Add("Content-Type", "text/html")
-		w.Write([]byte("I think I found a response"))
-		// w.Write([]byte(responseBody))
+
+		
+		w.Header().Add("Location", "/")
+		w.WriteHeader(http.StatusMovedPermanently)
 	}
 
 	type GistFileLight struct {
