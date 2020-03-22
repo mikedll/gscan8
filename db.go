@@ -6,10 +6,18 @@ import (
 	"log"
 	"time"
 	"regexp"
+	"strings"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 )
+
+func min(a, b int) int {
+	if(a < b) {
+		return a
+	}
+	return b
+}
 
 type User struct {
 	Id           int64      `gorm:"PRIMARY_KEY;AUTO_INCREMENT"`
@@ -47,7 +55,7 @@ func openDbForProject(isProduction bool) {
 	if isProduction {
 		connString = os.Getenv("DATABASE_URL")
 	} else {
-		connString = "host=localhost user=gscan8dev dbname=gscan8development password=thintent"
+		connString = "host=localhost user=postgres dbname=gscan8_development"
 		connString = connString + " sslmode=disable"
 	}
 	dbConn, err = gorm.Open("postgres", connString)
@@ -89,23 +97,54 @@ func searchGistFiles(userId int64, query string) (results []Snippet, err error) 
 	
 	for _, gistFile := range gistFiles {
 		matches := queryRegex.FindAllStringIndex(gistFile.Body, -1)
-		for _, match := range matches {
-			min := match[0] - 100
-			max := match[1] + 100
-			if min < 0 {
-				min = 0
+
+		matchIndex := 0
+		matchLines := []int{}
+		blocks := [][]int{}
+		lines := []string{}
+		curLineIndex := 0
+		curLineMin := 0
+
+		// store all lines, and store line indices surrounding matches
+		for i, c := range gistFile.Body {
+			if c == '\n' {
+				lines = append(lines, gistFile.Body[curLineMin:i])
+				
+				for matchIndex < len(matches) && curLineMin <= matches[matchIndex][0] && matches[matchIndex][1] <= i {
+					matchLines = append(matchLines, curLineIndex)
+					blockIndices := []int{}
+					for j := -2; j < 3; j++ {
+						blockIndices = append(blockIndices, curLineIndex + j)
+					}
+					blocks = append(blocks, blockIndices)
+
+					matchIndex += 1
+				}
+
+				curLineMin = i + 1
+				curLineIndex += 1
 			}
-			if max > len(gistFile.Body) {
-				max = len(gistFile.Body)
+		}
+
+		// len(blocks) = len(matches), assuming \n is not in the pattern. fix above.
+
+		for i, _ := range matches {
+
+			blocksAsStrings := []string{}
+			for j := 0; j < min(5, len(blocks[i])); j++ {
+				lineIndex := blocks[i][j]
+				if lineIndex >= 0 && lineIndex < len(lines) {
+					blocksAsStrings = append(blocksAsStrings, lines[blocks[i][j]])
+				}
 			}
 
 			snippet := Snippet{
 				GistFileId: gistFile.Id,
 				VendorId: gistFile.VendorId,
 				Filename: gistFile.Filename,
-				LineNumber: 1, // TODO calculate line number
+				LineNumber: blocks[i][2] + 1,
 				Title: gistFile.Title,
-				Body: gistFile.Body[min:max],
+				Body: strings.Join(blocksAsStrings, "\n"),
 				Language: gistFile.Language,
 			}
 

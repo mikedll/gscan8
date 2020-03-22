@@ -80,18 +80,22 @@ class App extends React.Component {
       coreContent = listAllGists
     } else {
       const snippets = this.state.results.map((snippet, i) => { return (
-        <tr key={i}>
-          <td>
-            <code>{snippet.body}</code>
-          </td>
-          <td>{snippet.filename}</td>
-          <td><a href={this.gistUrl(snippet)} target="_blank">{snippet.vendor_id}</a></td>
-        </tr>
+        <React.Fragment key={i}>
+          <tr>
+            <td>{snippet.filename}</td>
+            <td><a href={this.gistUrl(snippet)} target="_blank">{snippet.vendor_id}</a></td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <pre>{snippet.body}</pre>
+            </td>            
+          </tr>
+        </React.Fragment>
       )})
             
       const listResults = (
         <table className="table table-bordered">
-          <thead><tr><th>Snippet</th><th>Filename</th><th>ID / Link</th></tr></thead>
+          <thead><tr><th>Filename</th><th>ID / Link</th></tr></thead>
           <tbody>
             {snippets}
           </tbody>
