@@ -68,14 +68,14 @@ func main() {
 
 	flag.Parse()
 
-	var addr string = ":8081"
+	var addr string = "localhost:8081"
 	port := os.Getenv("PORT")
 	appEnv := os.Getenv("APP_ENV")
 
 	// Going to use this to determine production environment...LOL!
 	if appEnv == "production" || port != "" {
 		isProduction = true
-		addr = fmt.Sprintf(":%s", port)
+		addr = fmt.Sprintf("localhost:%s", port)
 	}
 
 	openDbForProject(isProduction)
