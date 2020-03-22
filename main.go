@@ -17,6 +17,7 @@ import (
 	"golang.org/x/oauth2/github"
 	"github.com/gorilla/sessions"
 	"github.com/gorilla/securecookie"
+	"github.com/joho/godotenv"
 )
 
 type UserApiResponse struct {
@@ -47,7 +48,22 @@ func stateStr() (string, error) {
 	return base64.StdEncoding.EncodeToString(b), nil
 }
 
+func fileExists(filename string) bool {
+    info, err := os.Stat(filename)
+    if os.IsNotExist(err) {
+        return false
+    }
+    return !info.IsDir()
+}
+
 func main() {
+	if(fileExists(".env")) {
+		loadErr := godotenv.Load()
+		if loadErr != nil {
+			log.Fatal("Error loading .env file")
+		}
+	}
+	
 	isProduction = false
 
 	flag.Parse()
