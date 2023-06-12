@@ -26,3 +26,5 @@ gscan8
 .emacs.desktop
 .emacs.desktop.lock
 
+.env
+main  
